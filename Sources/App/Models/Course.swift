@@ -34,10 +34,10 @@ final class Course: Model, Content {
 		getImagePathInDirectory(url: directoryURL)
 	}
     
-    var chapterPaths: [String] {
+    var chapters: [Chapter] {
         let urls = (try? FileManager.default.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: [], options: [.skipsHiddenFiles, /*.producesRelativePathURLs*/])) ?? []
-        let paths = urls.filter { $0.isDirectory && $0.pathExtension == "" }.map { $0.path }
-        return paths
+        let chapters = urls.filter { $0.isDirectory && $0.pathExtension == "" }.map { Chapter(url: $0) }
+        return chapters
     }
 		
 	init() {}
@@ -86,7 +86,7 @@ extension Course {
 		let price: Double
 		let directoryURL: URL
 		let imagePath:  String?
-        let chapterPaths: [String]
+        let chapters: [Chapter]
 		let freeChapters: [Int]
 	}
 	
@@ -94,14 +94,15 @@ extension Course {
 	var publicList: PublicInfo? {
 		get {
             guard published == true else { return nil }
-            return PublicInfo(id: id!, name: name, description: description, price: price, directoryURL: directoryURL, imagePath: imagePath, chapterPaths: [],/*courseCount: chaptersCount,*/ freeChapters: freeChapters)
+            return PublicInfo(id: id!, name: name, description: description, price: price, directoryURL: directoryURL, imagePath: imagePath, chapters: [],/*courseCount: chaptersCount,*/ freeChapters: freeChapters)
 		}
 	}
 	
 	var publicInfo: PublicInfo? {
 		get {
             guard published == true else { return nil }
-            return PublicInfo(id: id!, name: name, description: description, price: price, directoryURL: directoryURL, imagePath: imagePath, chapterPaths: chapterPaths,/*courseCount: chaptersCount,*/ freeChapters: freeChapters)
+            chapters.forEach { print($0.name) }
+            return PublicInfo(id: id!, name: name, description: description, price: price, directoryURL: directoryURL, imagePath: imagePath, chapters: chapters,/*courseCount: chaptersCount,*/ freeChapters: freeChapters)
 		}
 	}
 }

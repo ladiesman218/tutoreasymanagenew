@@ -1,6 +1,6 @@
 import Vapor
 
-// Practically path(string) is better than url, both FileManager functions such as fileExists and swift NIO functions for serving files such as req.fileio.streamFile use paths, also access files with urls of a file:// scheme seems very hard to tweak. Using urls here is only because it's a little easier to compose, simply return the composed url.path for whenever needed.
+// Practically path(string) is better than url, both FileManager functions such as fileExists and swift NIO functions for serving files such as req.fileio.streamFile use paths, also access remote files with urls of a file:// scheme seems very hard to tweak. Using urls here is only because it's a little easier to compose, simply return the composed url.path for whenever needed.
 let courseRoot = URL(fileURLWithPath: "../Courses", isDirectory: true).standardizedFileURL//URL(string: "../Courses")!
 let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
 let phoneNumberRegex = "^([+](\\d{1,3}|\\d{1,2}[- ]{1,}\\d{3,4})[- ]{1,}){0,1}\\d{5,20}$"

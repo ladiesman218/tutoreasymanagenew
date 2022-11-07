@@ -18,7 +18,7 @@ struct PublicChapterController: RouteCollection {
             throw ChapterError.invalidURL
         }
         
-        let chapter = Chapter(path: path, pdfURL: path.appendingPathComponent("chapter.pdf"), imageURL: path.appendingPathComponent("image.jpg"))
+        let chapter = Chapter(url: path)
         return chapter
     }
 }

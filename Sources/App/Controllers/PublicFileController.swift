@@ -20,23 +20,6 @@ struct PublicFileController: RouteCollection {
         let pathComponents = req.parameters.getCatchall()
         let path = "/" + String(pathComponents.joined(by: "/"))
         
-        // Can't access paths above the app's root directory by default, so manually insert "../" before.
-        //        let joinedPath = "../" + String(paths.joined(by: "/"))
-        
-        // Get banner images
-        //        if joinedPath.hasPrefix("../Courses/banner") {
-        //            for `extension` in ImageExtension.allCases {
-        //                if FileManager.default.fileExists(atPath: joinedPath.appending(".\(`extension`.rawValue)")) {
-        //                    return req.fileio.streamFile(at: joinedPath.appending(".\(`extension`.rawValue)"))
-        //                }
-        //            }
-        //        }
-        
-        // joinedPath will be url encoded automatically, so here it's safe to force generate a url from it.
-        //        let pathString = URL(string: joinedPath)!.absoluteString
-        
-        //        let path = pathString.removingPercentEncoding ?? pathString
-        //        return req.fileio.streamFile(at: joinedPath, mediaType: .init(type: "image", subType: "*"))
         return req.fileio.streamFile(at: path)
     }
     
