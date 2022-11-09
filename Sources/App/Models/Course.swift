@@ -101,7 +101,6 @@ extension Course {
 	var publicInfo: PublicInfo? {
 		get {
             guard published == true else { return nil }
-            chapters.forEach { print($0.name) }
             return PublicInfo(id: id!, name: name, description: description, price: price, directoryURL: directoryURL, imagePath: imagePath, chapters: chapters,/*courseCount: chaptersCount,*/ freeChapters: freeChapters)
 		}
 	}
