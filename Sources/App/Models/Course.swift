@@ -37,7 +37,8 @@ final class Course: Model, Content {
     var chapters: [Chapter] {
         let urls = (try? FileManager.default.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: [], options: [.skipsHiddenFiles, /*.producesRelativePathURLs*/])) ?? []
         let chapters = urls.filter { $0.isDirectory && $0.pathExtension == "" }.map { Chapter(url: $0) }
-        return chapters
+        
+        return chapters.sorted { $0.name < $1.name }
     }
 		
 	init() {}
