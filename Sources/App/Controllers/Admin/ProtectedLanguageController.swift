@@ -48,9 +48,8 @@ struct ProtectedLanguageController: RouteCollection {
 			}
 		}
 		
-        return queryID.and(queryName).guard({ _ in
-            errors.isEmpty
-        }, else: errors.abort) .flatMap { foundLanguage, _ in
+        return queryID.and(queryName).guard({ _ in errors.isEmpty }, else: errors.abort)
+			.flatMap { foundLanguage, _ in
 			
 			guard let foundLanguage = foundLanguage else {
 				let language = input.generateLanguage()

@@ -9,8 +9,9 @@ struct UserController: RouteCollection {
 		let publicUsersAPI = routes.grouped("api", "user")
 		publicUsersAPI.post("register", use: register)
 		
-		publicUsersAPI.grouped(User.authenticator()).post("login", use: login)
-		publicUsersAPI.post("logout", use: logout)
+		let protectedUsersAPI = publicUsersAPI.grouped(User.authenticator(), Token.authenticator())
+		protectedUsersAPI.post("login", use: login)
+		protectedUsersAPI.post("logout", use: logout)
 		
 		let tokenAuthGroup = publicUsersAPI.grouped(Token.authenticator(), User.guardMiddleware())
 		tokenAuthGroup.get("token", "user-public", use: getPublicUserFromToken)
@@ -62,9 +63,16 @@ struct UserController: RouteCollection {
 		}
 	}
 	
-	func logout(req: Request) -> HTTPStatus {
-		req.auth.logout(User.self)
-		return HTTPStatus.ok
+	func logout(req: Request) -> EventLoopFuture<HTTPStatus> {
+		// Get the user's ID, then invalidate its tokens, then logout
+		guard let userID = try? req.auth.require(User.self).requireID() else {
+			return req.eventLoop.future(.badRequest)
+		}
+		
+		return Token.invalidateAll(userID: userID, req: req).map { _ in
+			req.auth.logout(User.self)
+			return HTTPStatus.ok
+		}
 	}
 
 	func getPublicUserFromToken(req: Request) throws -> User.PublicInfo {

@@ -10,7 +10,7 @@ struct PublicLanguageController: RouteCollection {
     }
     
     func getAllLanguages(req: Request) -> EventLoopFuture<[Language.PublicInfo]> {
-        Language.query(on: req.db).filter(\.$published == true).all().map { lans in
+        Language.query(on: req.db)/*.filter(\.$published == true)*/.all().map { lans in
             return lans.compactMap { $0.publicList }
         }
     }
@@ -24,16 +24,12 @@ struct PublicLanguageController: RouteCollection {
                 return req.eventLoop.future(error: LanguageError.idNotFound(id: id))
             }
             
-            // In order to convert associated courses to their publicInfo, we need to get each course's path. But a course's path rely on getting its language relationship then read the language's path, so despite we know all courses are children of the given language, we sitll have to load language relationship/set language  here, that's a loop... Store course's path in database would fix this but that case if a language's name has changed, all associated courses' path should be modified in db, gives less flexibility.
+            // In order to convert associated courses to their publicInfo, we need to get each course's path. But a course's path rely on getting its language relationship then read the language's path, so despite we know all courses are children of the given language, we sitll have to either load language relationship from db, or set language manually here, that's a loop... Store course's path in database would fix this but that case if a language's name has changed, all associated courses' path should be modified in db, gives less flexibility.
             let courses = lan.courses
             courses.forEach { $0.$language.value = lan }
             let language = Language.PublicInfo(id: id, name: lan.name, description: lan.description, price: lan.price, courses: courses.compactMap { $0.publicList }, directoryURL: lan.directoryURL, imagePath: lan.imagePath)
             return req.eventLoop.future(language)
-//            return courses.map { $0.$language.load(on: req.db) }.flatten(on: req.eventLoop).map { _ in
-//                let publicList = courses.compactMap { $0.publicList }
-//                let final = Language.PublicInfo(id: id, name: lan.name, description: lan.description, price: lan.price, courses: publicList, directoryURL: lan.directoryURL, imagePath: lan.imagePath)
-//                return final
-//            }
+
         }
     }
 }

@@ -6,16 +6,9 @@ extension ModelSessionAuthenticatable {
 	func  unauthenticateAllSessions(id: SessionRecord.IDValue, req: Request, sessionDataKey: String) -> EventLoopFuture<Void> {
 		let data = SessionData.init(initialData: [sessionDataKey: id.uuidString])
 		
-		var queue: [EventLoopFuture<Void>] = []
-		return SessionRecord.query(on: req.db).filter(\.$data == data).all().map { sessions in
-			sessions.forEach { session in
-				session.data = [:]
-				let job = session.save(on: req.db)
-	//				let job = session.delete(on: req.db)
-				queue.append(job)
-			}
-		}.flatMap {
-			return queue.flatten(on: req.eventLoop)
+		return SessionRecord.query(on: req.db).filter(\.$data == data).all().flatMap { sessions in
+			sessions.forEach { $0.data = [:] }
+			return sessions.map { $0.save(on: req.db) }.flatten(on: req.eventLoop)
 		}
 	}
 }

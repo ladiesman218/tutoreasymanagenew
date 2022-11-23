@@ -29,13 +29,7 @@ extension Token {
 	}
 	static func invalidateAll(userID: User.IDValue, req: Request) -> EventLoopFuture<Void> {
 		return Token.query(on: req.db).filter(\.$user.$id == userID).all().flatMap { tokens in
-			
-			var queue = [EventLoopFuture<Void>]()
-			tokens.forEach { token in
-				let job = token.delete(on: req.db)
-				queue.append(job)
-			}
-			return queue.flatten(on: req.eventLoop)
+			return tokens.map { $0.delete(on: req.db) }.flatten(on: req.eventLoop)
 		}
 	}
 }
