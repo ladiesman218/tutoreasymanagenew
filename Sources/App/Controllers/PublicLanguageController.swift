@@ -27,8 +27,10 @@ struct PublicLanguageController: RouteCollection {
             // In order to convert associated courses to their publicInfo, we need to get each course's path. But a course's path rely on getting its language relationship then read the language's path, so despite we know all courses are children of the given language, we sitll have to either load language relationship from db, or set language manually here, that's a loop... Store course's path in database would fix this but that case if a language's name has changed, all associated courses' path should be modified in db, gives less flexibility.
             let courses = lan.courses
             courses.forEach { $0.$language.value = lan }
-            let language = Language.PublicInfo(id: id, name: lan.name, description: lan.description, price: lan.price, courses: courses.compactMap { $0.publicList }, directoryURL: lan.directoryURL, imagePath: lan.imagePath)
-            return req.eventLoop.future(language)
+			let language = lan.publicItem!	// lan is made sure published, so safe to use force unwrap here.
+			return req.eventLoop.future(language)
+//			let language = Language.PublicInfo(id: id, name: lan.name, description: lan.description, price: lan.price, courses: courses.compactMap { $0.publicList }, directoryURL: lan.directoryURL, imagePath: lan.imagePath, appStoreID: lan.appStoreID)
+//            return req.eventLoop.future(language)
         }
     }
 }

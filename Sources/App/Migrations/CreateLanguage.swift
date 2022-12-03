@@ -8,6 +8,7 @@ struct CreateLanguage: Migration {
 			.field(Language.FieldKeys.description, .string)
 			.field(Language.FieldKeys.published, .bool, .required)
 			.field(Language.FieldKeys.price, .double, .required)
+			.field(Language.FieldKeys.appstoreID, .string, .required)
 			.create()
 			
 	}

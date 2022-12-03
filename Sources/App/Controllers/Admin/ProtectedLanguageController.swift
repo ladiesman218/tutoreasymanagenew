@@ -48,6 +48,10 @@ struct ProtectedLanguageController: RouteCollection {
 			}
 		}
 		
+		if input.published && input.appStoreID.isEmpty {
+			errors.append(LanguageError.invalidAppStoreID)
+		}
+		
 		return queryID.and(queryName).guard({ _ in errors.isEmpty }, else: errors.abort)
 			.flatMap { foundLanguage, _ in
 				
