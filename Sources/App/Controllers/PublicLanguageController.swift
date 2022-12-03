@@ -29,7 +29,6 @@ struct PublicLanguageController: RouteCollection {
             courses.forEach { $0.$language.value = lan }
             let language = Language.PublicInfo(id: id, name: lan.name, description: lan.description, price: lan.price, courses: courses.compactMap { $0.publicList }, directoryURL: lan.directoryURL, imagePath: lan.imagePath)
             return req.eventLoop.future(language)
-
         }
     }
 }

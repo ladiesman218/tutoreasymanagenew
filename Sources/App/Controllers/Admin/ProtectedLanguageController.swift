@@ -48,24 +48,21 @@ struct ProtectedLanguageController: RouteCollection {
 			}
 		}
 		
-        return queryID.and(queryName).guard({ _ in errors.isEmpty }, else: errors.abort)
+		return queryID.and(queryName).guard({ _ in errors.isEmpty }, else: errors.abort)
 			.flatMap { foundLanguage, _ in
-			
-			guard let foundLanguage = foundLanguage else {
-				let language = input.generateLanguage()
-				return language.save(on: req.db).transform(to: HTTPStatus.created).encodeResponse(for: req)
+				
+				guard let foundLanguage = foundLanguage else {
+					let language = input.generateLanguage()
+					return language.save(on: req.db).transform(to: HTTPStatus.created).encodeResponse(for: req)
+				}
+				
+				// Here means we are updating an existing language
+				foundLanguage.name = input.name
+				foundLanguage.description = input.description
+				foundLanguage.published = input.published
+				foundLanguage.price = input.price
+				return foundLanguage.save(on: req.db).transform(to: HTTPStatus.ok).encodeResponse(for: req)
 			}
-			
-			// Here means we are updating an existing language
-			foundLanguage.name = input.name
-			foundLanguage.description = input.description
-			foundLanguage.published = input.published
-			// Only change price if a value is provided in input, otherwise not providing a price will set the price for the language to null.
-			if let price = input.price {
-				foundLanguage.price = price
-			}
-			return foundLanguage.save(on: req.db).transform(to: HTTPStatus.ok).encodeResponse(for: req)
-		}
 	}
 	
 	func deleteLanguage(req: Request) -> EventLoopFuture<Response> {

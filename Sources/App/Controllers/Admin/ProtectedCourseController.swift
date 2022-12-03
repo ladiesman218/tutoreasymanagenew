@@ -44,7 +44,7 @@ struct ProtectedCourseController: RouteCollection {
             return foundCourse
         }
         
-        let queryLanguage = Language.find(input.languageID, on: req.db).map { language in
+		let queryLanguage = Language.find(input.languageID, on: req.db).map { language in
             if language == nil {
                 errors.append(LanguageError.idNotFound(id: input.languageID))
             }
@@ -56,26 +56,25 @@ struct ProtectedCourseController: RouteCollection {
                 errors.append(CourseError.courseNameExisted(name: input.name))
             }
         }
-        
-        return queryName.and(queryLanguage).and(queryID).guard({ _ in
-            errors.isEmpty
-        }, else: errors.abort).flatMap { _, foundCourse in
-            
-            guard let foundCourse = foundCourse else {
-                let course = input.generateCourse()
-                return course.save(on: req.db).transform(to: HTTPStatus.created).encodeResponse(for: req)
-            }
-            // Here means updating an existed course
-            foundCourse.name = input.name
-            foundCourse.description = input.description
-            foundCourse.price = input.price
-            foundCourse.published = input.published
-            foundCourse.freeChapters = Array(Set(input.freeChapters)).sorted()	// When pre-editing an course hasn't been fully uploaded, allow set free chapter values greater than current chapters, eg: free chapter can contain number 80, but currently only 10 chapters has been uploaded.
-            foundCourse.$language.id = input.languageID
-            
-            return foundCourse.save(on: req.db).transform(to: HTTPStatus.ok).encodeResponse(for: req)
-        }
-        
+		
+		return queryName.and(queryLanguage).and(queryID).guard({ _ in
+			errors.isEmpty
+		}, else: errors.abort).flatMap { _, foundCourse in
+
+			guard let foundCourse = foundCourse else {
+				let course = input.generateCourse()
+				return course.save(on: req.db).transform(to: HTTPStatus.created).encodeResponse(for: req)
+			}
+			
+			// Here means updating an existed course
+			foundCourse.name = input.name
+			foundCourse.description = input.description
+			foundCourse.published = input.published
+			foundCourse.freeChapters = Array(Set(input.freeChapters)).sorted()	// When pre-editing an course hasn't been fully uploaded, allow set free chapter values greater than current chapters, eg: free chapter can contain number 80, but currently only 10 chapters has been uploaded.
+			foundCourse.$language.id = input.languageID
+			return foundCourse.save(on: req.db).transform(to: HTTPStatus.ok).encodeResponse(for: req)
+		}
+
     }
     
     func deleteCourse(req: Request) -> EventLoopFuture<Response> {

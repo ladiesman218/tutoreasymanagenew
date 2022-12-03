@@ -7,7 +7,7 @@ struct CreateLanguage: Migration {
 			.field(Language.FieldKeys.name, .string, .required).unique(on: Language.FieldKeys.name)
 			.field(Language.FieldKeys.description, .string)
 			.field(Language.FieldKeys.published, .bool, .required)
-			.field(Language.FieldKeys.price, .double)
+			.field(Language.FieldKeys.price, .double, .required)
 			.create()
 			
 	}

@@ -18,7 +18,7 @@ final class Language: Model, Content {
 	@Field(key: FieldKeys.name) var name: String
 	@Field(key: FieldKeys.description) var description: String
 	@Field(key: FieldKeys.published) var published: Bool
-	@Field(key: FieldKeys.price) var price: Double?
+	@Field(key: FieldKeys.price) var price: Double
 	@Children(for: \.$language) var courses: [Course]
 	
 	// According to https://docs.swift.org/swift-book/LanguageGuide/Properties.html, If a property marked with the lazy modifier is accessed by multiple threads simultaneously and the property hasn’t yet been initialized, there’s no guarantee that the property will be initialized only once.
@@ -38,7 +38,7 @@ final class Language: Model, Content {
 		
 	init() {}
 	
-	init(id: Language.IDValue? = nil, name: String, description: String, published: Bool, price: Double?) {
+	init(id: Language.IDValue? = nil, name: String, description: String, published: Bool, price: Double) {
 		self.id = id
 		self.name = name
 		self.description = description
@@ -56,13 +56,13 @@ extension Language {
 		let name: String
 		let description: String
 		let published: Bool
-		let price: Double?
+		let price: Double
 		
 		func validate(errors: inout [DebuggableError] ) {
 			if !nameLength.contains(name.count) {
 				errors.append(GeneralInputError.nameLengthInvalid)
 			}
-			if let price = price, price < 0 {
+			if price < 0 {
 				errors.append(GeneralInputError.invalidPrice)
 			}
 		}
@@ -76,7 +76,7 @@ extension Language {
         let id: Language.IDValue
 		let name: String
 		let description: String
-		let price: Double?
+		let price: Double
         let courses: [Course.PublicInfo]
 		let directoryURL: URL
 		let imagePath: String?
