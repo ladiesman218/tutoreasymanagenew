@@ -103,6 +103,7 @@ extension User {
 extension User {
 	
 	struct PublicInfo: Content {
+		let id: UUID
 		let email: String
 		let username: String
 		var firstName: String?
@@ -113,7 +114,7 @@ extension User {
 	}
 	
 	var publicInfo: PublicInfo {
-        .init(email: self.email, username: self.username, firstName: self.firstName, lastName: self.lastName, registerTime: self.registerTime, lastLoginTime: self.lastLoginTime, profilePic: self.profilePic)
+		.init(id: id!, email: self.email, username: self.username, firstName: self.firstName, lastName: self.lastName, registerTime: self.registerTime, lastLoginTime: self.lastLoginTime, profilePic: self.profilePic)
 	}
 	
 }

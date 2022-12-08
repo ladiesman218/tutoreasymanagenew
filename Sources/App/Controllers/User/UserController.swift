@@ -78,7 +78,7 @@ struct UserController: RouteCollection {
 	func getPublicUserFromToken(req: Request) throws -> User.PublicInfo {
 		let user: User = try req.auth.require(User.self)
 		
-        return User.PublicInfo(email: user.email, username: user.username, firstName: user.firstName, lastName: user.lastName, registerTime: user.registerTime, lastLoginTime: user.lastLoginTime, profilePic: user.profilePic)
+		return User.PublicInfo(id: user.id!, email: user.email, username: user.username, firstName: user.firstName, lastName: user.lastName, registerTime: user.registerTime, lastLoginTime: user.lastLoginTime, profilePic: user.profilePic)
 	}
     
     func uploadProfilePic(req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
