@@ -51,70 +51,76 @@ struct IAPController: RouteCollection {
 		}
 	}
 	
-	func subscribe(_ req: Request, transactionInfo: SignedTransactionInfo, renewalInfo: SignedRenewalInfo, userID: User.IDValue) throws -> EventLoopFuture<Void> {
+	func subscribe(_ req: Request, transactionInfo: SignedTransactionInfo, renewalInfo: SignedRenewalInfo, userID: User.IDValue) throws -> EventLoopFuture<HTTPStatus> {
 		// Make sure payload contains valid data
 		guard let expiresMilliSecond = transactionInfo.expiresDate else {
 			// Send email, expiration date is missing, this should never happen.
 			print("expiresDate missing")
-			return req.eventLoop.future(error: GeneralInputError.invalidDataStructure)
+			throw GeneralInputError.invalidDataStructure
 		}
 		
 		guard transactionInfo.type == "Auto-Renewable Subscription" else {
 			// Send email, we are processing a new subscription with the wrong method
-			return req.eventLoop.future(error: GeneralInputError.invalidDataStructure)
+			throw GeneralInputError.invalidDataStructure
 		}
 		
-		// Sometimes we get duplicate notifications, we've checked all possible reasons, it's not because the wrong response we replied to apple server, so maybe a time-out occured while processing the notification. To avoid duplicate orders created in db, we could check for notification ID but that requires another field in db to store the id, instead we will check for existing transactionId or completeTime(which is SignedTransactionInfo.purchaseDate in essence) or SignedTransactionInfo.expiresDate.
 		let transactionID = transactionInfo.transactionId
-		
-		return ProtectedOrderController().getAllValidOrders(req: req).flatMap { orders in
-			guard !orders.contains(where: { order in
-				order.transactionID == transactionID
-			}) else { return req.eventLoop.future() }
-		}
 		let productID = transactionInfo.productId
-		
-		// Received time stamp is in milli-second format, so devide it by 1000 to convert it to second
-		let expiresDate = Date(timeIntervalSince1970: TimeInterval(expiresMilliSecond / 1000))
-		let completeTime = Date(timeIntervalSince1970: .init(transactionInfo.purchaseDate / 1000))
 
-		guard Date.now < expiresDate else {
-			// Send email, expire time is earlier than current time, this should never happen
-			print("expiresDate is earlier than current time")
-			return req.eventLoop.future(error: GeneralInputError.invalidDataStructure)
-		}
-		// If VIP membership is being purchased, handle it and then return.
-		if productID == vipIAPIdentifier {
-
-			// Generate the order
-			let emptyCache = LanguageCache(languageID: UUID(), name: "vip", description: "", price: 123, iapIdentifier: vipIAPIdentifier)
-			let order = Order(status: .completed, languageCaches: [emptyCache], userID: userID, paymentAmount: 123, originalTransactionID: transactionInfo.originalTransactionId, transactionID: transactionInfo.transactionId, iapIdentifier: productID, generateTime: Date.now, completeTime: completeTime, cancelTime: nil, refundTime: nil, expirationTime: expiresDate)
-			
-			return order.create(on: req.db)//save(on: req.db)
-		}
-		
-		// Here means it's not a vip subscription, so we create language cache from iap identifier, then create order with the cache
-		return Language.query(on: req.db).filter(\.$annuallyIAPIdentifier == productID).first().flatMap { lan in
-			guard let lan = lan else {
-				// Send email, no language is found for the given in app purchase identifier
-				print("language is not found")
-				return req.eventLoop.future(error: OrderError.invalidIAPIdentifier(id: productID))
-			}
-
-			guard lan.published else {
-				// Send email, language is not published, admin should check app store connect selling products against languages in db
-				print("language is not published")
-				return req.eventLoop.future(error: OrderError.invalidIAPIdentifier(id: productID))
+		// Sometimes we get duplicate notifications. We've checked all possible reasons, it's not because the wrong response we replied to apple server, so maybe a time-out occured while processing the notification. To avoid duplicate orders created in db, we could check for notification ID but that requires another field in db to store the id, instead we will check for existing transactionId or completeTime(which is SignedTransactionInfo.purchaseDate in essence) or SignedTransactionInfo.expiresDate.
+		return ProtectedOrderController().getAllValidOrders(req: req).flatMapError({ error in
+			print(error)
+			return req.eventLoop.future( [Order]())
+		})
+		.flatMap { orders in
+			print("orders are: \(orders)")
+			guard !orders.contains(where: { $0.transactionID == transactionID }) else {
+				// Here means transactionID exists in db, we probably had process the notification, return the created response.
+				print("The order has been saved")
+				return req.eventLoop.future(HTTPStatus.created)
 			}
 			
-			// We have made sure language is published, it's safe here to force try.
-			let cache = try! LanguageCache(from: lan)
+			// Received time stamp is in milli-second format, so devide it by 1000 to convert it to second
+			let expiresDate = Date(timeIntervalSince1970: TimeInterval(expiresMilliSecond / 1000))
+			let completeTime = Date(timeIntervalSince1970: .init(transactionInfo.purchaseDate / 1000))
 			
-			// Generate the order
-			let order = Order(status: .completed, languageCaches: [cache], userID: userID, paymentAmount: 123, originalTransactionID: transactionInfo.originalTransactionId, transactionID: transactionInfo.transactionId, iapIdentifier: productID, generateTime: Date.now, completeTime: completeTime, cancelTime: nil, refundTime: nil, expirationTime: expiresDate)
-			let _ = order.create(on: req.db)
+			guard Date.now < expiresDate else {
+				// Send email, expire time is earlier than current time, this should never happen
+				print("expiresDate is earlier than current time")
+				return req.eventLoop.future(error: GeneralInputError.invalidDataStructure)
+			}
 			
-//			return order.create(on: req.db)
+			// If VIP membership is being purchased, handle it and then return.
+			if productID == vipIAPIdentifier {
+				
+				// Generate the order
+				let emptyCache = LanguageCache(languageID: UUID(), name: "vip", description: "", price: 123, iapIdentifier: vipIAPIdentifier)
+				let order = Order(status: .completed, languageCaches: [emptyCache], userID: userID, paymentAmount: 123, originalTransactionID: transactionInfo.originalTransactionId, transactionID: transactionInfo.transactionId, iapIdentifier: productID, generateTime: Date.now, completeTime: completeTime, cancelTime: nil, refundTime: nil, expirationTime: expiresDate)
+				return order.save(on: req.db).transform(to: HTTPStatus.created)
+			}
+			
+			// Here means it's not a vip subscription, so we create language cache from iap identifier, then create order with the cache
+			return Language.query(on: req.db).filter(\.$annuallyIAPIdentifier == productID).first().flatMap { lan in
+				guard let lan = lan else {
+					// Send email, no language is found for the given in app purchase identifier
+					print("language is not found")
+					return req.eventLoop.future(error: OrderError.invalidIAPIdentifier(id: productID))
+				}
+				
+				guard lan.published else {
+					// Send email, language is not published, admin should check app store connect selling products against languages in db
+					print("language is not published")
+					return req.eventLoop.future(error: LanguageError.notForSale)
+				}
+				
+				// We have made sure language is published, it's safe here to force try.
+				let cache = try! LanguageCache(from: lan)
+				
+				// Generate the order
+				let order = Order(status: .completed, languageCaches: [cache], userID: userID, paymentAmount: 123, originalTransactionID: transactionInfo.originalTransactionId, transactionID: transactionInfo.transactionId, iapIdentifier: productID, generateTime: Date.now, completeTime: completeTime, cancelTime: nil, refundTime: nil, expirationTime: expiresDate)
+				
+				return order.create(on: req.db).transform(to: HTTPStatus.created)
+			}
 		}
 	}
 	

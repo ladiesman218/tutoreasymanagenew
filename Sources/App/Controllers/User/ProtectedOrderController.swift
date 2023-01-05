@@ -26,7 +26,7 @@ struct ProtectedOrderController: RouteCollection {
 //		guard let input = try? req.content.decode(Order.Input.self) else {
 //			return req.eventLoop.future(error: OrderError.invalidInput)
 //		}
-//		
+//
 //		// Remove duplicate ids
 //		let languageIDs = input.languageIDs.uniqued()
 //
@@ -39,17 +39,17 @@ struct ProtectedOrderController: RouteCollection {
 //			guard !languages.isEmpty else { return req.eventLoop.future(HTTPStatus.badRequest) }
 //			// We have made sure all languages are published when quering, it's safe here to use !
 //			let caches = languages.compactMap { try! LanguageCache(from: $0) }
-//			
+//
 //			// Calculate total payment for the given languages
 //			let paymentAmount = caches.reduce(0) { partialResult, cache in
 //				partialResult + cache.price
 //			}
-//			
+//
 //			let iapIdentifier: String? = (caches.count == 1) ? caches.first!.iapIdentifier : nil
-//			
+//
 //			let order = Order(status: .unPaid, languageCaches: caches, userID: userID, paymentAmount: paymentAmount, originalTransactionID: nil, transactionID: "", iapIdentifier: iapIdentifier, generateTime: Date.now, completeTime: nil, cancelTime: nil, refundTime: nil, expirationTime: nil)
 //			order.$user.id = userID
-//			
+//
 //			return order.save(on: req.db).transform(to: .ok)
 //		}
 //	}
@@ -60,9 +60,6 @@ struct ProtectedOrderController: RouteCollection {
 		}
 		
 		return user.$orders.get(on: req.db)
-//			.flatMap { orders in
-//			return orders.map { $0.$items.load(on: req.db) }.flatten(on: req.eventLoop)
-//		}.transform(to: user.orders)
 	}
 	
 	func getAllValidOrders(req: Request) -> EventLoopFuture<[Order]> {
