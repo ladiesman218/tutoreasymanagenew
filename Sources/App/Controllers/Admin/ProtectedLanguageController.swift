@@ -48,7 +48,7 @@ struct ProtectedLanguageController: RouteCollection {
 			}
 		}
 		
-		if input.published && input.appStoreID.isEmpty {
+		if input.published && input.annuallyIAPIdentifier.isEmpty {
 			errors.append(LanguageError.invalidAppStoreID)
 		}
 		

@@ -56,7 +56,6 @@ public func configure(_ app: Application) throws {
         app.migrations.add(ImportTestingData())
     }
 	app.migrations.add(CreateOrder())
-	app.migrations.add(CreateLanguageCache())
 	
 	// Config session, .sessions.use(.fluent) has to be called before .middleware.use() otherwise won't work...
 	// Currently, session is used for Admin. Normal users will use tokens only.

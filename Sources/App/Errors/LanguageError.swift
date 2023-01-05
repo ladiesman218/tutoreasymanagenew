@@ -4,6 +4,7 @@ enum LanguageError: Error {
 	case idNotFound(id: Language.IDValue)
 	case languageNameExisted(name: String)
 	case invalidAppStoreID
+	case notForSale
 }
 
 extension LanguageError: AbortError, DebuggableError {
@@ -14,7 +15,7 @@ extension LanguageError: AbortError, DebuggableError {
 				return .notFound
 			case .languageNameExisted:
 				return .conflict
-			case .invalidAppStoreID:
+			case .invalidAppStoreID, .notForSale:
 				return .badRequest
 		}
 	}
@@ -27,6 +28,8 @@ extension LanguageError: AbortError, DebuggableError {
 				return "语言名称\(name)已被占用"
 			case .invalidAppStoreID:
 				return "无效app store id"
+			case .notForSale:
+				return "无法购买该课程"
 		}
 	}
 	
@@ -38,6 +41,8 @@ extension LanguageError: AbortError, DebuggableError {
 				return "language_name_existed"
 			case .invalidAppStoreID:
 				return "invalid_app_store_id"
+			case.notForSale:
+				return "language_not_for_sale"
 		}
 	}
 }

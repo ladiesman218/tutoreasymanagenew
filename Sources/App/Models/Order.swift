@@ -3,14 +3,14 @@ import Fluent
 
 final class Order: Model, Content {
 	
-	// To generate an order, first query all associated language' id, generate languageCaches based on the found results, then save the caches along with the user and other order info in db. Upon successful saving, start a timer, after given time period(15 mins for example), the order status should be changed to canceled automatically if hasn't been changed to completed already.
+	// To generate an order, first query all associated language's id, generate languageCaches based on the found results, then save the caches along with the user and other order info in db. Upon successful saving, start a timer, after given time period(15 mins for example), the order status should be changed to canceled automatically if hasn't been changed to completed already.
 	// After a longer time period(1 month for example), db should automatically purge all canceled orders.
 	// When deleting an order, remove all associated languageCaches, this should be made sure in both controller and db constraint. When deleting a user, delete all its orders.
 	enum Status: String, Codable {
 		// Canceled means user didn't make a successful payment within a limited time, or voluntarily clicked cancel button before making a payment.
 		// Completed means user has made a payment
 		
-		case unPaid = "UnPaid", completed = "Completed", canceled = "Canceled", refunded = "refunded"
+		case unPaid = "UnPaid", completed = "Completed", canceled = "Canceled", refunded = "Refunded"
 	}
 	
 	static var schema = "orders"
@@ -21,36 +21,50 @@ final class Order: Model, Content {
 		static let languageCaches = FieldKey(stringLiteral: "language_caches")
 		static let user = FieldKey(stringLiteral: "user_id")
 		static let paymentAmount = FieldKey(stringLiteral: "payment_amount")
+		static let originalTransactionID = FieldKey(stringLiteral: "original_transaction_id")
+		static let transactionID = FieldKey(stringLiteral: "transaction_id")
+		static let iapIdentifier = FieldKey(stringLiteral: "iap_identifier")
+
 		
 		static let generateTime = FieldKey(stringLiteral: "generate_time")
 		static let completeTime = FieldKey(stringLiteral: "complete_time")
 		static let cancelTime = FieldKey(stringLiteral: "cancel_time")
 		static let refundTime = FieldKey(stringLiteral: "refund-time")
+		static let expirationTime = FieldKey(stringLiteral: "expiration-time")
 	}
 	
 	@ID var id: UUID?
 	@Enum(key: FieldKeys.status) var status: Status
-	@Children(for: \LanguageCache.$order) var items: [LanguageCache]
+	@Field(key: FieldKeys.languageCaches) var items: [LanguageCache]
 	@Parent(key: FieldKeys.user) var user: User
 	@Field(key: FieldKeys.paymentAmount) var paymentAmount: Double
+	@OptionalField(key: FieldKeys.originalTransactionID) var originalTransactionID: String?
+	@Field(key: FieldKeys.transactionID) var transactionID: String
+	// Only used for apple platforms, so it's optional
+	@OptionalField(key: FieldKeys.iapIdentifier) var iapIdentifier: String?
 	
 	@Timestamp(key: FieldKeys.generateTime, on: .create) var generateTime: Date?
 	@Timestamp(key: FieldKeys.completeTime, on: .none) var completeTime: Date?
 	@Timestamp(key: FieldKeys.cancelTime, on: .none) var cancelTime: Date?
 	@Timestamp(key: FieldKeys.refundTime, on: .none) var refundTime: Date?
+	@Timestamp(key: FieldKeys.expirationTime, on: .none) var expirationTime: Date?
 	
 	init() {}
 	
-	init(id: IDValue? = nil, status: Status = .unPaid, userID: User.IDValue, paymentAmount: Double, generateTime: Date = Date(), completeTime: Date? = nil, cancelTime: Date? = nil, refundTime: Date? = nil) {
+	init(id: IDValue? = nil, status: Status = .unPaid, languageCaches: [LanguageCache], userID: User.IDValue, paymentAmount: Double, originalTransactionID: String? = nil, transactionID: String, iapIdentifier: String?, generateTime: Date = Date(), completeTime: Date? = nil, cancelTime: Date? = nil, refundTime: Date? = nil, expirationTime: Date? = nil) {
 		self.id = id
 		self.status = status
-
+		self.items = languageCaches
 		self.$user.id = userID
 		self.paymentAmount = paymentAmount
+		self.originalTransactionID = originalTransactionID
+		self.transactionID = transactionID
+		self.iapIdentifier = iapIdentifier
 		self.generateTime = generateTime
 		self.completeTime = completeTime
 		self.cancelTime = cancelTime
 		self.refundTime = refundTime
+		self.expirationTime = expirationTime
 	}
 }
 

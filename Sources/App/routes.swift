@@ -16,4 +16,5 @@ func routes(_ app: Application) throws {
 	try app.register(collection: PublicFileController())
 	
 	try app.register(collection: ProtectedOrderController())
+	try app.register(collection: IAPController())
 }

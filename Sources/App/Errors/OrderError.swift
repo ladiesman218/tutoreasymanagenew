@@ -12,6 +12,7 @@ enum OrderError: Error {
 	case courseNotFound(id: Course.IDValue)
 	case invalidStatus
 	case invalidInput
+	case invalidIAPIdentifier(id: String)
 }
 
 extension OrderError: AbortError, DebuggableError {
@@ -25,6 +26,8 @@ extension OrderError: AbortError, DebuggableError {
 				return "订单状态无效"
 			case .invalidInput:
 				return "无效输入"
+			case .invalidIAPIdentifier(let id):
+				return "无效的App内购买商品ID: \(id)"
 		}
 	}
 	
@@ -36,6 +39,8 @@ extension OrderError: AbortError, DebuggableError {
 				return .preconditionFailed
 			case .invalidInput:
 				return .badRequest
+			case .invalidIAPIdentifier:
+				return .notFound
 		}
 
 	}
@@ -50,6 +55,8 @@ extension OrderError: AbortError, DebuggableError {
 				return "invalid_order_status"
 			case .invalidInput:
 				return "invalid_order_input"
+			case .invalidIAPIdentifier(let id):
+				return "invalid_iap_identifier: \(id)"
 		}
 	}
 }

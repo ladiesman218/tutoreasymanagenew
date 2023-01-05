@@ -1,41 +1,38 @@
-import Vapor
-import Fluent
+//
+//  File.swift
+//  
+//
+//  Created by Lei Gao on 2023/1/3.
+//
 
-final class LanguageCache: Model {
-	static let schema: String = "language_caches"
+import Foundation
+import Vapor
+import FluentKit
+
+
+struct LanguageCache: Codable {
+	let languageID: Language.IDValue
+	let name: String
+	let description: String
+	let price: Double
+	let iapIdentifier: String?
 	
-	struct FieldKeys {
-		static let name = FieldKey(stringLiteral: "name")
-		static let description = FieldKey(stringLiteral: "description")
-		static let price = FieldKey(stringLiteral: "price")
-		static let order = FieldKey(stringLiteral: "order_id")
-	}
-	
-	@ID var id: UUID?
-	@Field(key: LanguageCache.FieldKeys.name) var name: String
-	@Field(key: LanguageCache.FieldKeys.description) var description: String
-	@Field(key: LanguageCache.FieldKeys.price) var price: Double
-	@Parent(key: LanguageCache.FieldKeys.order) var order: Order
-	
-	init() {}
-	
-	init(id: IDValue? = nil, name: String, description: String, price: Double, orderID: Order.IDValue) {
-		self.id = id
+	init(languageID: Language.IDValue, name: String, description: String, price: Double, iapIdentifier: String?) {
+		self.languageID = languageID
 		self.name = name
 		self.description = description
 		self.price = price
-		self.$order.id = orderID
+		self.iapIdentifier = iapIdentifier
 	}
-	
-	// LanguageCache should be initialized before order, so when init a LanguageCache, order id doesn't exist yet.
-	init?(from language: Language, orderID: Order.IDValue) {
-		guard let _  = try? language.requireID() else {
-			return nil
-		}		
+	init(from language: Language) throws {
+		let id = try language.requireID()
+		guard language.published else {
+			throw LanguageError.notForSale
+		}
+		self.languageID = id
 		self.name = language.name
 		self.description = language.description
 		self.price = language.price
-		self.$order.id = orderID
+		self.iapIdentifier = language.annuallyIAPIdentifier
 	}
-
 }

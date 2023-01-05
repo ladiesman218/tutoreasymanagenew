@@ -11,7 +11,7 @@ final class Language: Model, Content {
 		static let description = FieldKey(stringLiteral: "description")
 		static let published = FieldKey(stringLiteral: "published")
 		static let price = FieldKey(stringLiteral: "price")
-		static let appstoreID = FieldKey(stringLiteral: "app_store_id")		// In app purchase id set in Apple app store
+		static let iapIdentifier1 = FieldKey(stringLiteral: "in_app_purchase_identifier_1")
 	}
 	
 	@ID var id: UUID?
@@ -19,8 +19,8 @@ final class Language: Model, Content {
 	@Field(key: FieldKeys.description) var description: String
 	@Field(key: FieldKeys.published) var published: Bool
 	@Field(key: FieldKeys.price) var price: Double
-	@Field(key: FieldKeys.appstoreID) var appStoreID: String
 	@Children(for: \.$language) var courses: [Course]
+	@Field(key: FieldKeys.iapIdentifier1) var annuallyIAPIdentifier: String
 	
 	// According to https://docs.swift.org/swift-book/LanguageGuide/Properties.html, If a property marked with the lazy modifier is accessed by multiple threads simultaneously and the property hasn’t yet been initialized, there’s no guarantee that the property will be initialized only once.
 	// When lazy properties get initialized, their values will never change. In this case even when we change the name of lanuage, its path and imageURL will stay unchanged unless the server is rebooted. So although using computed properties here seems a waste of resource since values are computed everytime they are accessed and never get stored, we will still be using them here.
@@ -39,13 +39,13 @@ final class Language: Model, Content {
 		
 	init() {}
 	
-	init(id: Language.IDValue? = nil, name: String, description: String, published: Bool, price: Double, appStoreID: String) {
+	init(id: Language.IDValue? = nil, name: String, description: String, published: Bool, price: Double, annuallyIAPIdentifier: String) {
 		self.id = id
 		self.name = name
 		self.description = description
 		self.published = published
 		self.price = price
-		self.appStoreID = appStoreID
+		self.annuallyIAPIdentifier = annuallyIAPIdentifier
 	}
 }
 
@@ -59,7 +59,7 @@ extension Language {
 		let description: String
 		let published: Bool
 		let price: Double
-		let appStoreID: String
+		let annuallyIAPIdentifier: String
 		
 		func validate(errors: inout [DebuggableError] ) {
 			if !nameLength.contains(name.count) {
@@ -68,10 +68,13 @@ extension Language {
 			if price < 0 {
 				errors.append(GeneralInputError.invalidPrice)
 			}
+			if published && annuallyIAPIdentifier.isEmpty {
+				errors.append(LanguageError.invalidAppStoreID)
+			}
 		}
 		
 		func generateLanguage() -> Language {
-			return Language(id: id, name: name, description: description, published: published, price: price, appStoreID: appStoreID)
+			return Language(id: id, name: name, description: description, published: published, price: price, annuallyIAPIdentifier: annuallyIAPIdentifier)
 		}
 	}
 	
@@ -83,21 +86,21 @@ extension Language {
         let courses: [Course.PublicInfo]
 		let directoryURL: URL
 		let imagePath: String?
-		let appStoreID: String
+		let annuallyIAPIdentifer: String
 	}
 	
     // PublicInfo should only be gettable when 'published' is true
 	var publicList: PublicInfo? {
 		get {
             guard published == true else { return nil }
-			return PublicInfo(id: id!, name: name, description: description, price: price, courses: [], directoryURL: directoryURL, imagePath: imagePath, appStoreID: appStoreID)
+			return PublicInfo(id: id!, name: name, description: description, price: price, courses: [], directoryURL: directoryURL, imagePath: imagePath, annuallyIAPIdentifer: annuallyIAPIdentifier)
 		}
 	}
 
 	var publicItem: PublicInfo? {
 		get {
             guard published == true else { return nil }
-			return PublicInfo(id: id!, name: name, description: description, price: price, courses: courses.compactMap { $0.publicInfo }, directoryURL: directoryURL, imagePath: imagePath, appStoreID: appStoreID)
+			return PublicInfo(id: id!, name: name, description: description, price: price, courses: courses.compactMap { $0.publicInfo }, directoryURL: directoryURL, imagePath: imagePath, annuallyIAPIdentifer: annuallyIAPIdentifier)
 		}
 	}
     

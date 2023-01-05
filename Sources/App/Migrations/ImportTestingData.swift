@@ -12,9 +12,9 @@ import PostgresKit
 struct ImportTestingData: Migration {
     
     // MARK: - languages
-	let scratch = Language(name: "Scratch", description: "图形化编程工具，通过点击并拖拽的方式，完成编程，可以使儿童或者成人编程初学者学习编程基础概念等", published: true, price: 1200, appStoreID: "")
-	let wedo = Language(name: "Wedo", description: "通过乐高电动模型和简单的程序编写，鼓励和激发小学生学习科学和工程相关课程的兴趣。 VeDo 2.0强调孩子通过动手体验来树立信心，敢于发现、提出和思考问题，运用工具寻 找答案，并解决实际生活中的问题学生可以在提出问题和解决问题的过程中学到知识。", published: true, price: 1000, appStoreID: "")
-	let python = Language(name: "Python", description: "Python由荷兰数学和计算机科学研究学会的吉多·范罗苏姆于1990年代初设计，作为一门叫做ABC语言的替代品。Python提供了高效的高级数据结构，还能简单有效地面向对象编程。Python语法和动态类型，以及解释型语言的本质，使它成为多数平台上写脚本和快速开发应用", published: true, price: 1150.2, appStoreID: "")
+	let scratch = Language(name: "Scratch", description: "图形化编程工具，通过点击并拖拽的方式，完成编程，可以使儿童或者成人编程初学者学习编程基础概念等", published: true, price: 1200, annuallyIAPIdentifier: "scratch_test")
+	let wedo = Language(name: "Wedo", description: "通过乐高电动模型和简单的程序编写，鼓励和激发小学生学习科学和工程相关课程的兴趣。 VeDo 2.0强调孩子通过动手体验来树立信心，敢于发现、提出和思考问题，运用工具寻 找答案，并解决实际生活中的问题学生可以在提出问题和解决问题的过程中学到知识。", published: true, price: 1000, annuallyIAPIdentifier: "wedo_test")
+	let python = Language(name: "Python", description: "Python由荷兰数学和计算机科学研究学会的吉多·范罗苏姆于1990年代初设计，作为一门叫做ABC语言的替代品。Python提供了高效的高级数据结构，还能简单有效地面向对象编程。Python语法和动态类型，以及解释型语言的本质，使它成为多数平台上写脚本和快速开发应用", published: true, price: 1150.2, annuallyIAPIdentifier: "python_test")
     
     // MARK: - Courses
     
