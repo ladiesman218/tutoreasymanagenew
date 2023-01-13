@@ -1,10 +1,10 @@
 import Fluent
 import FluentPostgresDriver
 
-struct CreateLanguage: Migration {
-	func prepare(on database: Database) -> EventLoopFuture<Void> {
-		#warning("Add constraint, if published is true, iapIdentifier couldn't be empty")
-		return database.schema(Language.schema).id()
+struct CreateLanguage: AsyncMigration {
+	func prepare(on database: Database) async throws {
+	#warning("Add constraint, if published is true, iapIdentifier couldn't be empty")
+		try await database.schema(Language.schema).id()
 			.field(Language.FieldKeys.name, .string, .required).unique(on: Language.FieldKeys.name)
 			.field(Language.FieldKeys.description, .string)
 			.field(Language.FieldKeys.published, .bool, .required)
@@ -13,10 +13,8 @@ struct CreateLanguage: Migration {
 			.create()
 	}
 	
-	func revert(on database: Database) -> EventLoopFuture<Void> {
-		database.schema(Language.schema).delete()
+	func revert(on database: Database) async throws {
+		try await database.schema(Language.schema).delete()
 	}
-	
-	
 }
 

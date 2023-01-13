@@ -14,86 +14,57 @@ struct UserController: RouteCollection {
 		protectedUsersAPI.post("logout", use: logout)
 		
 		let tokenAuthGroup = publicUsersAPI.grouped(Token.authenticator(), User.guardMiddleware())
-		tokenAuthGroup.get("token", "user-public", use: getPublicUserFromToken)
+		tokenAuthGroup.get("public-info", use: getPublicUserInfo)
         tokenAuthGroup.on(.POST, "profile-pic", body: .collect(maxSize: "10mb") , use: uploadProfilePic)
 	}
 	
-	func register(_ req: Request) throws -> EventLoopFuture<Response> {
+	func register(_ req: Request) async throws -> HTTPStatus {
 		var errors: [DebuggableError] = []
-		
-		let input: User.RegisterInput
-		
-		input = try req.content.decode(User.RegisterInput.self)
-		 
-		input.validate(errors: &errors)
-		
-		// Validate database contraints
-		let queryEmail = User.query(on: req.db).filter(\.$email == input.email).first().map { foundEmail in
-			if foundEmail != nil { errors.append(RegistrationError.emailAlreadyExists) }
-		}
-		let queryUsername = User.query(on: req.db).filter(\.$username == input.username).first().map { foundUsername in
-			if foundUsername != nil { errors.append(RegistrationError.usernameAlreadyExists) }
-		}
-
-		var hashedPassword = ""
-        return queryEmail.and(queryUsername).guard({ _ in
-            errors.isEmpty
-        }, else: errors.abort).flatMapThrowing { _ in
-			hashedPassword = try Bcrypt.hash(input.password1)
-		}.flatMap { _ in
-            let user = User(email: input.email, username: input.username, firstName: input.firstName, lastName: input.lastName, password: hashedPassword, profilePic: nil)
-			return user.save(on: req.db).transform(to: HTTPStatus.created).encodeResponse(for: req)
-		}
+		let input = try req.content.decode(User.RegisterInput.self)
+		try await input.validate(errors: &errors, req: req)
+		guard errors.isEmpty else { throw errors.abort }
+		let hashedPassword = try Bcrypt.hash(input.password1)
+		let user = User(email: input.email, username: input.username, firstName: input.firstName, lastName: input.lastName, password: hashedPassword, profilePic: nil)
+		try await user.create(on: req.db)
+		return .created
 	}
 	
-	func login(_ req: Request) -> EventLoopFuture<Token> {
-		let user: User
+	#warning("test")
+	func login(_ req: Request) async throws -> Token {
 		
-		do {
-			user = try req.auth.require(User.self)
-		} catch {
-			return req.eventLoop.future(error: AuthenticationError.invalidLoginNameOrPassword)
-		}
-		
-		let userID = user.id!
+		let userID = try req.auth.require(User.self).requireID()
+//		let userID = user.id!
+		try await Token.invalidateAll(userID: userID, req: req)
 		let token = Token.generate(for: userID)
-		
-		return Token.invalidateAll(userID: userID, req: req).flatMap { _ in
-			return token.save(on: req.db).transform(to: token)
-		}
+		try await token.save(on: req.db)
+		return token
 	}
 	
-	func logout(req: Request) -> EventLoopFuture<HTTPStatus> {
-		// Get the user's ID, then invalidate its tokens, then logout
-		guard let userID = try? req.auth.require(User.self).requireID() else {
-			return req.eventLoop.future(.badRequest)
-		}
-		
-		return Token.invalidateAll(userID: userID, req: req).map { _ in
-			req.auth.logout(User.self)
-			return HTTPStatus.ok
-		}
+	#warning("test")
+	func logout(_ req: Request) async throws -> HTTPStatus {
+		let userID = try req.auth.require(User.self).requireID()
+		try await Token.invalidateAll(userID: userID, req: req)
+		req.auth.logout(User.self)
+		return .ok
 	}
-
-	func getPublicUserFromToken(req: Request) throws -> User.PublicInfo {
-		let user: User = try req.auth.require(User.self)
-		
-		return User.PublicInfo(id: user.id!, email: user.email, username: user.username, firstName: user.firstName, lastName: user.lastName, registerTime: user.registerTime, lastLoginTime: user.lastLoginTime, profilePic: user.profilePic)
+	
+	#warning("change client-side endpoint, then test")
+	func getPublicUserInfo(_ req: Request) throws -> User.PublicInfo {
+		let user = try req.auth.require(User.self)
+		return user.publicInfo
 	}
     
-    func uploadProfilePic(req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        let data = try req.content.decode(Data.self)
-        guard let user = req.auth.get(User.self) else { throw Abort(.notFound) }
-        let userID = try user.requireID()
-        let name = userID.uuidString + UUID().uuidString + ".jpg"
-        
-//        let dt = ByteBuffer(data: data.image)
-        
-        let path = req.application.directory.workingDirectory + imageFolder + name
-        return req.fileio.writeFile(.init(data: data), at: path).flatMap { _ in
-            user.profilePic = name
-            return user.save(on: req.db).transform(to: .ok)
-        }
-    }
-    
+	#warning("test")
+	func uploadProfilePic(_ req: Request) async throws -> HTTPStatus {
+		let data = try req.content.decode(Data.self)
+		let user = try req.auth.require(User.self)
+		let userID = try user.requireID()
+		let name = userID.uuidString + UUID().uuidString + ".jpg"
+		let path = req.application.directory.workingDirectory + imageFolder + name
+		
+		try await req.fileio.writeFile(.init(data: data), at: path)
+		user.profilePic = name
+		try await user.save(on: req.db)
+		return .ok
+	}
 }

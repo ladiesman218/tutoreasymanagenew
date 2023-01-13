@@ -6,23 +6,24 @@ struct PublicCourseController: RouteCollection {
 	func boot(routes: RoutesBuilder) throws {
 		let courses = routes.grouped("api", "course")
 		
-		courses.get(use: getAllCourse)
+		courses.get(use: getAllCourses)
 		courses.get(":id", use: getCourse)
 	}
-	
-	func getAllCourse(req: Request) -> EventLoopFuture<[Course.PublicInfo]> {
-		return Course.query(on: req.db)/*.filter(\.$published == true)*/.with(\.$language).all().map { courses in
-			courses.compactMap { $0.publicList }
-		}
+
+	func getAllCourses(_ req: Request) async throws -> [Course.PublicInfo] {
+		return try await Course.query(on: req.db).with(\.$language).all().compactMap { $0.publicList }
 	}
-	
-	func getCourse(req: Request) -> EventLoopFuture<Course.PublicInfo> {
 		
+	func getCourse(_ req: Request) async throws -> Course.PublicInfo {
 		guard let idString = req.parameters.get("id"), let id = Course.IDValue(idString) else {
-			return req.eventLoop.future(error: GeneralInputError.invalidID)
+			throw GeneralInputError.invalidID
 		}
 		
-        return Course.query(on: req.db).filter(\.$id == id).filter(\.$published == true).with(\.$language).first().unwrap(or: CourseError.idNotFound(id: id)).map { return $0.publicInfo! }
+		let course = try await Course.query(on: req.db).filter(\.$id == id).with(\.$language).first()
+		guard let course = course, course.published else {
+			throw CourseError.idNotFound(id: id)
+		}
+		return course.publicInfo!
 	}
 }
 

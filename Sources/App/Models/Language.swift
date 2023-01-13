@@ -61,7 +61,11 @@ extension Language {
 		let price: Double
 		let annuallyIAPIdentifier: String
 		
-		func validate(errors: inout [DebuggableError] ) {
+		func validate(errors: inout [DebuggableError], req: Request) async throws {
+			async let foundID = Language.find(id, on: req.db)
+			async let foundName = Language.query(on: req.db).filter(\.$name == name).first()
+			async let foundIAPIdentifier = Language.query(on: req.db).filter(\.$annuallyIAPIdentifier == annuallyIAPIdentifier).first()
+
 			if !nameLength.contains(name.count) {
 				errors.append(GeneralInputError.nameLengthInvalid)
 			}
@@ -70,6 +74,20 @@ extension Language {
 			}
 			if published && annuallyIAPIdentifier.isEmpty {
 				errors.append(LanguageError.invalidAppStoreID)
+			}
+			
+			if id != nil, try await foundID == nil {
+				errors.append(LanguageError.idNotFound(id: id!))
+			}
+			if let foundName = try await foundName {
+				if foundName.id != id {
+					errors.append(LanguageError.languageNameExisted(name: name))
+				}
+			}
+			if let foundIdentifier = try await foundIAPIdentifier {
+				if foundIdentifier.id != id {
+					errors.append(LanguageError.invalidAppStoreID)
+				}
 			}
 		}
 		

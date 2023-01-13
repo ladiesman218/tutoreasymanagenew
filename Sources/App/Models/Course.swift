@@ -60,9 +60,24 @@ extension Course {
 		let freeChapters: [Int]
 		let languageID: Language.IDValue
 		
-		func validate(errors: inout [DebuggableError]) {
+		#warning("make all validate functions query db simultaneously instead of sequentially, or test if current implementation is the way we want. If an ideal way is found, apply it to other validation methods")
+		func validate(errors: inout [DebuggableError], req: Request) async throws {
+			async let language = Language.find(languageID, on: req.db)
+			async let foundID = Course.find(id, on: req.db)
+			async let foundName = Course.query(on: req.db).filter(\.$name == name).first()
+
 			if !nameLength.contains(name.count) {
 				errors.append(GeneralInputError.nameLengthInvalid)
+			}
+
+			if try await language == nil {
+				errors.append(LanguageError.idNotFound(id: languageID))
+			}
+			if id != nil, try await foundID == nil {
+				errors.append(CourseError.idNotFound(id: id!))
+			}
+			if let foundName = try await foundName, foundName.id != id {
+				errors.append(CourseError.courseNameExisted(name: name))
 			}
 		}
 		

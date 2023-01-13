@@ -66,38 +66,38 @@ extension User {
 		let password1: String
 		let password2: String
 		
-		func validate(errors: inout [DebuggableError]) {
+		func validate(errors: inout [DebuggableError], req: Request) async throws {
+			async let foundEmail = User.query(on: req.db).filter(\.$email == email).first()
+			async let foundUsername = User.query(on: req.db).filter(\.$username == username).first()
+
 			if email.range(of: emailRegex, options: .regularExpression) == nil {
 				errors.append(RegistrationError.invalidEmail)
 			}
-			
 			if !userNameLength.contains(username.count) {
 				errors.append(RegistrationError.usernameLengthError)
 			}
-			
-			if firstName != nil {
-				if !nameLength.contains(firstName!.count) {
-					errors.append(GeneralInputError.nameLengthInvalid)
-				}
+			if let firstName = firstName, !nameLength.contains(firstName.count) {
+				errors.append(GeneralInputError.nameLengthInvalid)
 			}
-			
-			if lastName != nil {
-				if !nameLength.contains(lastName!.count) {
-					errors.append(GeneralInputError.nameLengthInvalid)
-				}
+			if let lastName = lastName, !nameLength.contains(lastName.count) {
+				errors.append(GeneralInputError.nameLengthInvalid)
 			}
-			
 			if password1 != password2 {
 				errors.append(RegistrationError.passwordsDontMatch)
 			}
-			
 			if !passwordLength.contains(password1.count) {
 				errors.append(RegistrationError.passwordLengthError)
 			}
 			
+			if try await foundEmail != nil {
+				errors.append(RegistrationError.emailAlreadyExists)
+			}
+			if try await foundUsername != nil {
+				errors.append(RegistrationError.usernameAlreadyExists)
+			}
+			
 		}
 	}
-	
 }
 
 extension User {
