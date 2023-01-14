@@ -18,11 +18,13 @@ struct ProtectedOrderController: RouteCollection {
 		protectedRoute.post("delete", ":id", use: deleteOrder)
 	}
 	
+	// Currently this is not used by anyone, it's left here just for future-proof.
 	func getAllOrders(_ req: Request) async throws -> [Order] {
 		let user = try req.auth.require(User.self)
 		return try await user.$orders.get(on: req.db)
 	}
 	
+	// Currently this is not used by anyone, it's left here just for future-proof.
 	func getAllValidOrders(_ req: Request) async throws -> [Order] {
 		let allOrders = try await getAllOrders(req)
 		// First, filter out orders that have expirationTime, since expirationTime is optional

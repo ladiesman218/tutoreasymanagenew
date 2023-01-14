@@ -16,20 +16,13 @@ struct AdminController: RouteCollection {
 		var errors = [DebuggableError]()
 		let input: AdminUser.RegisterInput
 		input = try req.content.decode(AdminUser.RegisterInput.self)
-		input.validate(errors: &errors)
-		
-		// email and username validation. Multiple async let command runs simultaneously, so here query for existing email and username, along with password hash down below, won't take 3 times of time each task should be taken.
-		async let foundEmail = AdminUser.query(on: req.db).filter(\.$email == input.email).first()
-		async let foundUsername = AdminUser.query(on: req.db).filter(\.$username == input.username).first()
-		if try await foundEmail != nil { errors.append(RegistrationError.emailAlreadyExists) }
-		if try await foundUsername != nil { errors.append(RegistrationError.usernameAlreadyExists) }
+		try await input.validate(errors: &errors, req: req)
+		async let passwordHash = req.password.async.hash(input.password1)
 		
 		guard errors.isEmpty else { throw errors.abort }
 		
-		async let passwordHash = req.password.async.hash(input.password1)
 		let admin = try await AdminUser(email: input.email, username: input.username, password: passwordHash)
 		
-		// create command throws, so if the creation fails, the function throws thus won't be returning the admin user
 		try await admin.create(on: req.db)
 		return admin
 	}
@@ -57,7 +50,7 @@ struct AdminController: RouteCollection {
 //		let _ = foundAdmin.unauthenticateAllSessions(id: foundAdmin.id!, req: req, sessionDataKey: "_AdminUserSession")
 		req.auth.login(foundAdmin)
 		req.session.authenticate(foundAdmin)
-		foundAdmin.lastLoginTime = Date()
+		foundAdmin.lastLoginTime = Date.now
 		try await foundAdmin.save(on: req.db)
 		return Response()
 	}

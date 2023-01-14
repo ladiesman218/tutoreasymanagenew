@@ -88,14 +88,14 @@ extension User {
 			if !passwordLength.contains(password1.count) {
 				errors.append(RegistrationError.passwordLengthError)
 			}
-			
+//			let startTime = Date.now
 			if try await foundEmail != nil {
 				errors.append(RegistrationError.emailAlreadyExists)
 			}
 			if try await foundUsername != nil {
 				errors.append(RegistrationError.usernameAlreadyExists)
 			}
-			
+//			print(Date.now.timeIntervalSince(startTime))
 		}
 	}
 }

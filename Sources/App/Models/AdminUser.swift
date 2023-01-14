@@ -52,26 +52,28 @@ extension AdminUser {
 		let password1: String
 		let password2: String
 		
-		func validate(errors: inout [DebuggableError]) {
+		func validate(errors: inout [DebuggableError], req: Request) async throws {
+			async let foundEmail = AdminUser.query(on: req.db).filter(\.$email == email).first()
+			async let foundUsername = AdminUser.query(on: req.db).filter(\.$username == username).first()
+			
 			if (email.range(of: emailRegex, options: .regularExpression) == nil) {
 				errors.append(RegistrationError.invalidEmail)
 			}
-			
 			if username.rangeOfCharacter(from: nonAlphanumerics) != nil {
 				errors.append(RegistrationError.invalidUsername)
 			}
-			
 			if !userNameLength.contains(username.count) {
 				errors.append(RegistrationError.usernameLengthError)
 			}
-			
 			if password1 != password2 {
 				errors.append(RegistrationError.passwordsDontMatch)
 			}
-			
 			if !passwordLength.contains(password1.count) || !passwordLength.contains(password2.count) {
 				errors.append(RegistrationError.passwordLengthError)
 			}
+			
+			if try await foundEmail != nil { errors.append(RegistrationError.emailAlreadyExists) }
+			if try await foundUsername != nil { errors.append(RegistrationError.usernameAlreadyExists) }
 		}
 	}
 	
@@ -80,13 +82,3 @@ extension AdminUser {
 		let password: String
 	}
 }
-
-//extension AdminUser.LoginInput: Validatable {
-//  static func validations(_ validations: inout Validations) {
-//    validations.add("loginName", as: String.self, is: .email || (.alphanumeric && .count(userNameLength)))
-//    validations.add("password", as: String.self, is: .count(passwordLength))
-//  }
-//}
-
-
-

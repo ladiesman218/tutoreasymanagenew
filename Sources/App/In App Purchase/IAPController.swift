@@ -31,10 +31,10 @@ struct IAPController: RouteCollection {
 		return identifiers
 	}
 		
-	func getNotification(_ req: Request) async -> HTTPStatus {
+	func getNotification(_ req: Request) async throws -> HTTPStatus {
 		// For version 2 notifications, it retries five times; at 1, 12, 24, 48, and 72 hours after the previous attempt.
 		//https://developer.apple.com/documentation/appstoreservernotifications/responding_to_app_store_server_notifications
-		do {
+//		do {
 			let notification = try req.content.decode(SignedPayload.self)
 			
 			let payload = try req.application.jwt.signers.verifyJWSWithX5C(
@@ -43,10 +43,10 @@ struct IAPController: RouteCollection {
 				rootCert: "")
 			try await processNotification(req, notification: payload)
 			return .ok
-		} catch {
-			print(error)
-			return .internalServerError
-		}
+//		} catch {
+//			print(error)
+//			return .internalServerError
+//		}
 	}
 	
 	func subscribe(_ req: Request, transactionInfo: SignedTransactionInfo, renewalInfo: SignedRenewalInfo, userID: User.IDValue) async throws {
@@ -80,7 +80,7 @@ struct IAPController: RouteCollection {
 		
 		// Received time stamp is in milli-second format, so devide it by 1000 to convert it to second
 		let expiresDate = Date(timeIntervalSince1970: TimeInterval(expiresMilliSecond / 1000))
-		let completeTime = Date(timeIntervalSince1970: .init(transactionInfo.purchaseDate / 1000))
+		let completeTime = Date(timeIntervalSince1970: TimeInterval(transactionInfo.purchaseDate / 1000))
 		
 		guard Date.now < expiresDate else {
 			// Send email, expire time is earlier than current time, this should never happen

@@ -60,7 +60,6 @@ extension Course {
 		let freeChapters: [Int]
 		let languageID: Language.IDValue
 		
-		#warning("make all validate functions query db simultaneously instead of sequentially, or test if current implementation is the way we want. If an ideal way is found, apply it to other validation methods")
 		func validate(errors: inout [DebuggableError], req: Request) async throws {
 			async let language = Language.find(languageID, on: req.db)
 			async let foundID = Course.find(id, on: req.db)

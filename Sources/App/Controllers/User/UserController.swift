@@ -29,18 +29,19 @@ struct UserController: RouteCollection {
 		return .created
 	}
 	
-	#warning("test")
 	func login(_ req: Request) async throws -> Token {
-		
-		let userID = try req.auth.require(User.self).requireID()
-//		let userID = user.id!
-		try await Token.invalidateAll(userID: userID, req: req)
+		let user = try req.auth.require(User.self)
+		let userID = try user.requireID()
+		async let invalidaOldTokens: () = Token.invalidateAll(userID: userID, req: req)
+		async let updateLoginTime: () = updateLoginTime(req, user: user)
 		let token = Token.generate(for: userID)
+
+		try await invalidaOldTokens
 		try await token.save(on: req.db)
+		try await updateLoginTime
 		return token
 	}
 	
-	#warning("test")
 	func logout(_ req: Request) async throws -> HTTPStatus {
 		let userID = try req.auth.require(User.self).requireID()
 		try await Token.invalidateAll(userID: userID, req: req)
@@ -48,13 +49,17 @@ struct UserController: RouteCollection {
 		return .ok
 	}
 	
-	#warning("change client-side endpoint, then test")
-	func getPublicUserInfo(_ req: Request) throws -> User.PublicInfo {
+	func getPublicUserInfo(_ req: Request) async throws -> User.PublicInfo {
 		let user = try req.auth.require(User.self)
+		try await updateLoginTime(req, user: user)
 		return user.publicInfo
 	}
+	
+	func updateLoginTime(_ req: Request, user: User) async throws {
+		user.lastLoginTime = Date.now
+		try await user.save(on: req.db)
+	}
     
-	#warning("test")
 	func uploadProfilePic(_ req: Request) async throws -> HTTPStatus {
 		let data = try req.content.decode(Data.self)
 		let user = try req.auth.require(User.self)

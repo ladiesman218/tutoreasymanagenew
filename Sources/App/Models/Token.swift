@@ -28,7 +28,6 @@ extension Token {
 		return Token(value: random, userID: userID)
 	}
 	
-	#warning("test")
 	static func invalidateAll(userID: User.IDValue, req: Request) async throws {
 		let tokens = try await Token.query(on: req.db).filter(\.$user.$id == userID).all()
 		return await withThrowingTaskGroup(of: Void.self) { group in
