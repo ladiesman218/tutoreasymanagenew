@@ -30,7 +30,12 @@ struct UserController: RouteCollection {
 	}
 	
 	func login(_ req: Request) async throws -> Token {
-		let user = try req.auth.require(User.self)
+		let user: User
+		do {
+			user = try req.auth.require(User.self)
+		} catch {
+			throw AuthenticationError.invalidLoginNameOrPassword
+		}
 		let userID = try user.requireID()
 		async let invalidaOldTokens: () = Token.invalidateAll(userID: userID, req: req)
 		async let updateLoginTime: () = updateLoginTime(req, user: user)

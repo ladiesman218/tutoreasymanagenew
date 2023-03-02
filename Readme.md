@@ -19,5 +19,4 @@ PDF editing:
 5. Sample: say if a pdf is at '~/myProjects/Courses/Scratch/编程屋/第02课：小熊过马路/第02课：小熊过马路.pdf', the link target is a video reside at '~/myProjects/Courses/Scratch/编程屋/第02课：小熊过马路/第2课：小熊过马路教学步骤/第1步 课程导入.mp4', the relative path should be '第2课：小熊过马路教学步骤/第1步 课程导入.mp4', copy and encode it, then deal with the slash.
 
 
-
 When setting up IAP in appstore connect, make sure "VIP" is contained in VIP membership's localizedTitle, and is the only product that contains this string, otherwise this product may appear at lower position on client side.
