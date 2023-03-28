@@ -15,8 +15,8 @@ struct CreateOrder: AsyncMigration {
 		
 		try await database.schema(Order.schema).id()
 			.field(Order.FieldKeys.status, orderStatus, .required, .sql(defaultStatus))
-			.field(Order.FieldKeys.languageCaches, .array(of: .dictionary), .required)
-			.field(Order.FieldKeys.user, .uuid, .required, .references(User.schema, .id))
+			.field(Order.FieldKeys.courseCaches, .array(of: .dictionary), .required)
+			.field(Order.FieldKeys.user, .uuid, .required, .references(User.schema, .id, onDelete: .cascade))
 			.field(Order.FieldKeys.paymentAmount, .double, .required)
 			.field(Order.FieldKeys.originalTransactionID, .string)
 			.field(Order.FieldKeys.transactionID, .string)

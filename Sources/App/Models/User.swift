@@ -54,8 +54,6 @@ extension User: ModelAuthenticatable {
 	}
 }
 
-//extension User: ModelSessionAuthenticatable {}
-
 extension User {
 	
 	struct RegisterInput: Decodable {
@@ -118,4 +116,3 @@ extension User {
 	}
 	
 }
-

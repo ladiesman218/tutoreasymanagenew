@@ -1,6 +1,4 @@
 
-In order to control if a language is shown, and to set a total price for all its courses(optional), language itself is stored in database
-
 Use this command to transfer files to remote servers:
 `rsync -iavhe "ssh -i ~/.ssh/tutoreasymanage_key.pem" /Users/leigao/myProjects/TutorEasyManage/ azureuser@20.243.114.35:/home/azureuser/TutorEasyManage/ --delete`
 -i: output a change-summary for all updates
@@ -12,11 +10,22 @@ Use this command to transfer files to remote servers:
 Use -n to dry run first, see what will be deleted/updated. Without deletion, renamed old files will stay there and may cause compile errors.
 
 PDF editing:
-1. PDF expert could do editing(verified), Adobe acrobat reader may do editing and verify link target in one place(guess, try taobao hacked version first to verify it.)
-2. Find out the RELATIVE path between pdf file and the target resource
-3. Copy and paste that relative path to http://www.jsons.cn/urlencode/o or https://www.woodmanzhang.com/webkit/urlencode/index.html or any baidu search result of 'url encode在线编码'
-4. Sub paths can be tricky, coz any slash in the path will be encoded into '%2F', that's fine for our purpose, but when the editors try to verify the link themselves, it may not work. So replace %2F back to /, or find a better way to encode url
-5. Sample: say if a pdf is at '~/myProjects/Courses/Scratch/编程屋/第02课：小熊过马路/第02课：小熊过马路.pdf', the link target is a video reside at '~/myProjects/Courses/Scratch/编程屋/第02课：小熊过马路/第2课：小熊过马路教学步骤/第1步 课程导入.mp4', the relative path should be '第2课：小熊过马路教学步骤/第1步 课程导入.mp4', copy and encode it, then deal with the slash.
+1. PDF expert could do editing(verified), Adobe acrobat reader can do editing and link target verification in one place(and easier, without the url encode steps)
+2. In Acrobat pro, Select the picture(screen shot of a video), click 编辑文本和图像 icon, then in sub menus select 链接 - 添加/编辑网络链接或文档链接, mouse will become a target aim like shape, select the entire picture zone to create the link.
+3. Change link type to hidden rect-angle, link action to open web page. 
+4. Paste the relative path of the pdf file itself to the linked file, to the url text box, click ok and save the pdf. 
+5. Sample: say if a pdf is at '~/myProjects/Courses/Scratch/编程屋/第02课：小熊过马路/第02课：小熊过马路.pdf', the link target is a video reside at '~/myProjects/Courses/Scratch/编程屋/第02课：小熊过马路/第2课：小熊过马路教学步骤/第1步 课程导入.mp4', the relative path should be '第2课：小熊过马路教学步骤/第1步 课程导入.mp4', put that into the url text box. Close the link edit menu, then click to verify if the link is correct.
 
 
 When setting up IAP in appstore connect, make sure "VIP" is contained in VIP membership's localizedTitle, and is the only product that contains this string, otherwise this product may appear at lower position on client side.
+
+
+Course directory structure:
+Stages and chapters are identified as folders. 
+1. Folders for stages should be named with numbers at the VERY BEGINNING. If the course contains more than 10 stage, those numbers should be in same digit for each stage folder, Eg: 01xxx, 02yyy, etc,  otherwise sorting will be wrong, 10 could go before 1 since it's string type when sorted.
+2. Numbers prefix will be removed from name, when initializing stages.
+3. Each chapter should have a number in its folder name, position of the numbers could be in the middle of the name but try to keep the position same for each chapter folder. 
+4. Again the digit of number in chapter folder's name should be same, try to keep all of them 2 digit, eg: 01, 02
+5. In each chapter, there should be a "teacher.pdf" file
+
+

@@ -1,7 +1,7 @@
 import Vapor
 import Fluent
 
-struct ProtectedCourseController: RouteCollection {
+struct AdminCourseController: RouteCollection {
 	func boot(routes: RoutesBuilder) throws {
 		let courseAPI = routes.grouped([AdminUser.sessionAuthenticator(), AdminUser.guardMiddleware()]).grouped("api", "admin", "course")
 		
@@ -16,14 +16,15 @@ struct ProtectedCourseController: RouteCollection {
 			throw GeneralInputError.invalidID
 		}
 		
-		async let course = Course.query(on: req.db).filter(\.$id == id).with(\.$language).first()
-		
-		guard let course = try await course else { throw CourseError.idNotFound(id: id)}
-		return course
+		if let course = try await Course.find(id, on: req.db) {
+			return course
+		} else {
+			throw CourseError.idNotFound(id: id)
+		}
 	}
 	
 	func getAllCourses(_ req: Request) async throws -> [Course] {
-		return try await Course.query(on: req.db).with(\.$language).all()
+		return try await Course.query(on: req.db).all()
 	}
 	
 	func save(_ req: Request) async throws -> HTTPStatus {
@@ -43,8 +44,7 @@ struct ProtectedCourseController: RouteCollection {
 		foundID.name = input.name
 		foundID.description = input.description
 		foundID.published = input.published
-		foundID.freeChapters = input.freeChapters
-		foundID.$language.id = input.languageID
+		foundID.price = input.price
 		try await foundID.update(on: req.db)
 		return .ok
 	}

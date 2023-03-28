@@ -12,19 +12,19 @@ struct ProtectedOrderController: RouteCollection {
 	func boot(routes: RoutesBuilder) throws {
 		let protectedRoute = routes.grouped("api", "order").grouped(Token.authenticator(), User.guardMiddleware())
 
+		protectedRoute.get("create", use: createOrder)
 		protectedRoute.get(":id", use: getOrder)
 		protectedRoute.get(use: getAllOrders)
 		protectedRoute.get("valid", use: getAllValidOrders)
 		protectedRoute.post("delete", ":id", use: deleteOrder)
 	}
 	
-	// Currently this is not used by anyone, it's left here just for future-proof.
 	func getAllOrders(_ req: Request) async throws -> [Order] {
 		let user = try req.auth.require(User.self)
 		return try await user.$orders.get(on: req.db)
 	}
 	
-	// Currently this is not used by anyone, it's left here just for future-proof.
+	#warning("this and the following are duplicates")
 	func getAllValidOrders(_ req: Request) async throws -> [Order] {
 		let allOrders = try await getAllOrders(req)
 		// First, filter out orders that have expirationTime, since expirationTime is optional
@@ -37,15 +37,9 @@ struct ProtectedOrderController: RouteCollection {
 		return validOrders
 	}
 	
-	func getAllOrdersForUser(_ req: Request, userID: User.IDValue) async throws -> [Order] {
-		guard let user = try await User.find(userID, on: req.db) else {
-			throw AuthenticationError.userNotFound
-		}
-		return try await user.$orders.get(on: req.db)
-	}
-	
+	// This is only called from IAPController
 	func getAllValidOrdersForUser(_ req: Request, userID: User.IDValue) async throws -> [Order] {
-		let allOrders = try await getAllOrdersForUser(req, userID: userID)
+		let allOrders = try await getAllOrders(req)
 		// First, filter out orders that have expirationTime, since expirationTime is optional
 		let subscriptionOrders = allOrders.filter {
 			$0.expirationTime != nil
@@ -69,6 +63,29 @@ struct ProtectedOrderController: RouteCollection {
 		return order
 	}
 	
+	func createOrder(_ req: Request) async throws -> HTTPStatus {
+		let userID = try req.auth.require(User.self).requireID()
+		let courseIDs = try req.content.decode(Order.Input.self).courseIDs.uniqued()
+		
+		let courses = try await withThrowingTaskGroup(of: Course.self, body: { group in
+			var courses = [Course]()
+			for id in courseIDs {
+				group.addTask {
+					guard let course = try await Course.find(id, on: req.db) else {
+						throw CourseError.idNotFound(id: id)
+					}
+					return course
+				}
+				
+				for try await course in group { courses.append(course) }
+			}
+			return courses
+		})
+		let caches = courses.map { try! CourseCache(from: $0) }
+		let order = Order(courseCaches: caches, userID: userID, paymentAmount: 123, transactionID: "asdf")
+		try await order.save(on: req.db)
+		return .created
+	}
 	// completeOrder should NOT be directly exposed via API endpoint, otherwise a user can access that endpoint and change the order status to completed. Instead, this should be called inside the payment's handler's callback function
 	func completeOrder(_ req: Request) async throws -> HTTPStatus {
 		let order = try await getOrder(req)
@@ -81,7 +98,7 @@ struct ProtectedOrderController: RouteCollection {
 		return .ok
 	}
 	
-	#warning("How should this be called?")
+	#warning("How should this be called? User shouldn't call this with its own authentication")
 	func refundOrder(_ req: Request) async throws -> HTTPStatus {
 		let order = try await getOrder(req)
 		guard order.status == .completed else {

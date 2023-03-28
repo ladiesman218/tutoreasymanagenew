@@ -48,7 +48,6 @@ public func configure(_ app: Application) throws {
 	
 	app.migrations.add(CreateAdmin())
 	app.migrations.add(CreateOwner())
-	app.migrations.add(CreateLanguage())
 	app.migrations.add(CreateCourse())
 	app.migrations.add(CreateUser())
 	app.migrations.add(CreateToken())

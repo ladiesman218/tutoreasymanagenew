@@ -6,14 +6,11 @@ func routes(_ app: Application) throws {
 	}
 	try app.register(collection: AdminController())
 	
-	try app.register(collection: ProtectedLanguageController())
-	try app.register(collection: PublicLanguageController())
-	
-	try app.register(collection: ProtectedCourseController())
+	try app.register(collection: AdminCourseController())
 	try app.register(collection: PublicCourseController())
 	
 	try app.register(collection: UserController())
-	try app.register(collection: PublicFileController())
+	try app.register(collection: FileController())
 	
 	try app.register(collection: ProtectedOrderController())
 	try app.register(collection: IAPController())

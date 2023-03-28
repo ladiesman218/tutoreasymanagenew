@@ -6,6 +6,7 @@ enum GeneralInputError: Error {
 	case nameLengthInvalid
 	case invalidPrice
 	case invalidDataStructure
+	case invalidURL
 }
 
 extension GeneralInputError: AbortError, DebuggableError {
@@ -22,6 +23,8 @@ extension GeneralInputError: AbortError, DebuggableError {
 				return "价格最低不应小于0"
 			case .invalidDataStructure:
 				return "数据无效"
+			case .invalidURL:
+				return "无效地址"
 		}
 	}
 	
@@ -41,6 +44,8 @@ extension GeneralInputError: AbortError, DebuggableError {
 				return "invalid_price"
 			case .invalidDataStructure:
 				return "invalid_data_structure"
+			case .invalidURL:
+				return "invalid_url"
 		}
 	}
 }

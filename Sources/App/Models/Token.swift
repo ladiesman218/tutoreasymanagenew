@@ -6,7 +6,7 @@ final class Token: Model, Content {
 	
 	struct FieldKeys {
 		static let value: FieldKey = .string("value")
-		static let userID: FieldKey = .string("userID")
+		static let userID: FieldKey = .string("user_id")
 	}
 	
 	@ID var id: UUID?
