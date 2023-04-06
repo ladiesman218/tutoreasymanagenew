@@ -92,7 +92,7 @@ extension Course {
 		let name: String
 		let description: String
 		let price: Float
-		let stages: [Stage]
+		let stages: [Stage.PublicInfo]
 		let imageURL: URL?
 		let annuallyIAPIdentifier: String
 	}
@@ -108,7 +108,7 @@ extension Course {
 	var publicInfo: PublicInfo? {
 		get {
 			guard published == true else { return nil }
-			return PublicInfo(id: id!, name: name, description: description, /*directoryURL: directoryURL,*/ price: price, stages: stages, imageURL: imageURL, annuallyIAPIdentifier: annuallyIAPIdentifier)
+			return PublicInfo(id: id!, name: name, description: description, /*directoryURL: directoryURL,*/ price: price, stages: stages.map { $0.publicList }, imageURL: imageURL, annuallyIAPIdentifier: annuallyIAPIdentifier)
 		}
 	}
 }

@@ -24,6 +24,9 @@ struct PublicCourseController: RouteCollection {
 		}
 		
 		if let course = try await Course.find(id, on: req.db), course.published {
+			guard FileManager.default.fileExists(atPath: course.directoryURL.path) else {
+				throw CourseError.noDirectoryFound(name: course.name)
+			}
 			return course.publicInfo!
 		} else {
 			throw CourseError.idNotFound(id: id)
@@ -45,6 +48,9 @@ struct PublicCourseController: RouteCollection {
 			throw CourseError.nameNotFound(name: courseName)
 		}
 		let stageURL = try pathComponents.generateURL()
+		guard FileManager.default.fileExists(atPath: stageURL.path) else {
+			throw CourseError.noDirectoryFound(name: pathComponents.last!)
+		}
 		let stage = Stage(directoryURL: stageURL)
 		return stage.publicInfo
 	}

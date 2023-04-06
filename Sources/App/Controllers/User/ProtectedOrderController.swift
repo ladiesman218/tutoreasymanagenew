@@ -77,8 +77,8 @@ struct ProtectedOrderController: RouteCollection {
 					return course
 				}
 				
-				for try await course in group { courses.append(course) }
 			}
+			for try await course in group { courses.append(course) }
 			return courses
 		})
 		let caches = courses.map { try! CourseCache(from: $0) }

@@ -27,7 +27,7 @@ struct FileController: RouteCollection {
 		guard !url.isDirectory else {
 			throw GeneralInputError.invalidURL }
 
-		// Offset coursesDirIndex by 3 to get chapter name
+		// coursesDirectoryName is where we put all course files, currently it's 'courses', following should be the name of the course, next should be the name for each stage's folder, then the name for chapter's folder. Offset coursesDirIndex by 3 to get chapter name
 		guard let coursesDirIndex = pathComponents.firstIndex(of: coursesDirectoryName), pathComponents.count > coursesDirIndex + 3 else {
 			throw GeneralInputError.invalidURL
 		}

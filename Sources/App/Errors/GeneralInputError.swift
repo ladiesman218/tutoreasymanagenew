@@ -24,7 +24,7 @@ extension GeneralInputError: AbortError, DebuggableError {
 			case .invalidDataStructure:
 				return "数据无效"
 			case .invalidURL:
-				return "无效地址"
+				return "请求资源地址无效"
 		}
 	}
 	

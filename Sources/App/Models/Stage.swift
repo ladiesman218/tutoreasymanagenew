@@ -11,6 +11,7 @@ struct Stage: Codable {
 	let directoryURL: URL
 	let name: String
 	let imageURL: URL?
+	let description: String
 	
 	var chapters: [Chapter] {
 		let subURLs = directoryURL.subFoldersURLs
@@ -24,6 +25,12 @@ struct Stage: Codable {
 		self.directoryURL = directoryURL
 		self.name = directoryURL.lastPathComponent
 		self.imageURL = getImageURLInDirectory(url: directoryURL)
+		
+		if let desc = try? String(contentsOf: directoryURL.appendingPathComponent("介绍.txt")) {
+			self.description = desc
+		} else {
+			self.description = ""
+		}
 	}
 	
 	// Without this, querying a stage will never get back its chapters, since chapters are defined as a caclulated property.
@@ -37,10 +44,15 @@ struct Stage: Codable {
 		let directoryURL: URL
 		let name: String
 		let imageURL: URL?
+		let description: String
 		let chapters: [Chapter]
 	}
 	
+	var publicList: PublicInfo {
+		return .init(directoryURL: directoryURL, name: name, imageURL: imageURL, description: description, chapters: [])
+	}
+	
 	var publicInfo: PublicInfo {
-		return .init(directoryURL: directoryURL, name: name, imageURL: imageURL, chapters: chapters)
+		return .init(directoryURL: directoryURL, name: name, imageURL: imageURL, description: description, chapters: chapters)
 	}
 }
