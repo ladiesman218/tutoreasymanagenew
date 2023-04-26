@@ -34,13 +34,7 @@ struct Stage: Codable {
 	}
 	
 	// Without this, querying a stage will never get back its chapters, since chapters are defined as a caclulated property.
-	struct PublicInfo: Codable, AsyncResponseEncodable {
-		func encodeResponse(for request: Request) async throws -> Response {
-			var headers = HTTPHeaders()
-			headers.add(name: .contentType, value: "application/json")
-			let json = try JSONEncoder().encode(self)
-			return .init(status: .ok, headers: headers, body: .init(string: String(data: json, encoding: .utf8)!))
-		}
+	struct PublicInfo: Content, Hashable {
 		let directoryURL: URL
 		let name: String
 		let imageURL: URL?

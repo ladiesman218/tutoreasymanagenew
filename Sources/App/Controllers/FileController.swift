@@ -45,7 +45,8 @@ struct FileController: RouteCollection {
 			throw CourseError.nameNotFound(name: courseName)
 		}
 		
-		let validOrders = try await ProtectedOrderController().getAllValidOrders(req)
+		let validOrders = try await ProtectedOrderController().getAllValidOrders(req).content.decode([Order].self)
+		print(validOrders)
 		// If an valid order contains the given course
 		guard !validOrders.filter({ order in
 			order.items.contains { $0.name == courseName }

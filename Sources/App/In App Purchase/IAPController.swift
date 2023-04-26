@@ -54,7 +54,7 @@ struct IAPController: RouteCollection {
 		let transactionID = transactionInfo.transactionId
 		let productID = transactionInfo.productId
 
-		async let validOrders = ProtectedOrderController().getAllValidOrdersForUser(req, userID: userID)
+		async let validOrders = ProtectedOrderController().getAllValidOrdersForUser(req, userID: userID).content.decode([Order].self)
 		async let course = Course.query(on: req.db).group(.and) { group in
 			group.filter(\.$annuallyIAPIdentifier == productID)
 			group.filter(\.$published == true)

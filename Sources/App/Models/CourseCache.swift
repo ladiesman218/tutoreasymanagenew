@@ -10,7 +10,7 @@ import Vapor
 import FluentKit
 
 
-struct CourseCache: Codable {
+struct CourseCache: Codable, Hashable {
 	let id: UUID
 	let name: String
 	let description: String

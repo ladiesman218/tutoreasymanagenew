@@ -1,17 +1,17 @@
 import Vapor
 import Fluent
 
-final class Order: Model, Content {
+final class Order: Model, Content, Hashable {
 	
 	// To generate an order, first query all associated course's id, generate courseCaches based on the found results, then save the caches along with the user and other order info in db. Upon successful saving, start a timer, after given time period(15 mins for example), the order status should be changed to canceled automatically if hasn't been changed to completed already.
-	#warning("After a longer time period(1 month for example), db should automatically purge all unpaid and canceled orders.")
+#warning("After a longer time period(1 month for example), db should automatically purge all unpaid and canceled orders.")
 	enum Status: String, Codable {
 		// Canceled means user didn't make a successful payment within a limited time, or voluntarily clicked cancel button before making a payment.
 		// Completed means user has made a payment
 		
 		case unPaid = "UnPaid", completed = "Completed", canceled = "Canceled", refunded = "Refunded"
 	}
-	
+
 	static var schema = "orders"
 	
 	struct FieldKeys {
@@ -63,6 +63,36 @@ final class Order: Model, Content {
 		self.cancelTime = cancelTime
 		self.refundTime = refundTime
 		self.expirationTime = expirationTime
+	}
+	
+	static func ==(lhs: Order, rhs: Order) -> Bool {
+		return lhs.id == rhs.id &&
+		lhs.status == rhs.status &&
+		lhs.items == rhs.items &&
+		lhs.paymentAmount == rhs.paymentAmount &&
+		lhs.originalTransactionID == rhs.originalTransactionID &&
+		lhs.transactionID == rhs.transactionID &&
+		lhs.iapIdentifier == rhs.iapIdentifier &&
+		lhs.generateTime == rhs.generateTime &&
+		lhs.completeTime == rhs.completeTime &&
+		lhs.cancelTime == rhs.cancelTime &&
+		lhs.refundTime == rhs.refundTime &&
+		lhs.expirationTime == rhs.expirationTime
+	}
+
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(id)
+		hasher.combine(status)
+		hasher.combine(items)
+		hasher.combine(paymentAmount)
+		hasher.combine(originalTransactionID)
+		hasher.combine(transactionID)
+		hasher.combine(iapIdentifier)
+		hasher.combine(generateTime)
+		hasher.combine(completeTime)
+		hasher.combine(cancelTime)
+		hasher.combine(refundTime)
+		hasher.combine(expirationTime)
 	}
 }
 

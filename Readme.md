@@ -29,3 +29,6 @@ Stages and chapters are identified as folders.
 5. In each chapter, there should be a "teacher.pdf" file
 
 
+
+
+For all API endpoint that should be or can be cached on client side, return encoded response instead of actual data. Before returning the response, create a http header and add etag so that client side has a way to know if the cached response is stale. For value of etag header, use 

@@ -12,6 +12,7 @@ struct UserController: RouteCollection {
 		let protectedUsersAPI = publicUsersAPI.grouped(User.authenticator(), Token.authenticator())
 		protectedUsersAPI.post("login", use: login)
 		protectedUsersAPI.post("logout", use: logout)
+		protectedUsersAPI.get("validate", use: validateToken)
 		
 		let tokenAuthGroup = publicUsersAPI.grouped(Token.authenticator(), User.guardMiddleware())
 		tokenAuthGroup.get("public-info", use: getPublicUserInfo)
@@ -52,6 +53,11 @@ struct UserController: RouteCollection {
 		try await Token.invalidateAll(userID: userID, req: req)
 		req.auth.logout(User.self)
 		return .ok
+	}
+	
+	func validateToken(_ req: Request) -> Bool {
+		let token: Token? = try? req.auth.require(Token.self)
+		return token != nil
 	}
 	
 	func getPublicUserInfo(_ req: Request) async throws -> User.PublicInfo {

@@ -19,14 +19,18 @@ struct ProtectedOrderController: RouteCollection {
 		protectedRoute.post("delete", ":id", use: deleteOrder)
 	}
 	
-	func getAllOrders(_ req: Request) async throws -> [Order] {
+	func getAllOrders(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(User.self)
-		return try await user.$orders.get(on: req.db)
+		let orders = try await user.$orders.get(on: req.db)
+		var headers = HTTPHeaders()
+		headers.add(name: .eTag, value: orders.hashValue.description)
+		return try await orders.encodeResponse(status: .ok, headers: headers, for: req)
 	}
 	
 	#warning("this and the following are duplicates")
-	func getAllValidOrders(_ req: Request) async throws -> [Order] {
-		let allOrders = try await getAllOrders(req)
+	func getAllValidOrders(_ req: Request) async throws -> Response {
+		let allOrders = try await getAllOrders(req).content.decode([Order].self)
+		print(allOrders)
 		// First, filter out orders that have expirationTime, since expirationTime is optional
 		let subscriptionOrders = allOrders.filter {
 			$0.expirationTime != nil
@@ -34,12 +38,14 @@ struct ProtectedOrderController: RouteCollection {
 		let validOrders = subscriptionOrders.filter {
 			$0.status == .completed && $0.expirationTime! > Date.now
 		}
-		return validOrders
+		var headers = HTTPHeaders()
+		headers.add(name: .eTag, value: validOrders.hashValue.description)
+		return try await validOrders.encodeResponse(status: .ok, headers: headers, for: req)
 	}
 	
 	// This is only called from IAPController
-	func getAllValidOrdersForUser(_ req: Request, userID: User.IDValue) async throws -> [Order] {
-		let allOrders = try await getAllOrders(req)
+	func getAllValidOrdersForUser(_ req: Request, userID: User.IDValue) async throws -> Response {
+		let allOrders = try await getAllOrders(req).content.decode([Order].self)
 		// First, filter out orders that have expirationTime, since expirationTime is optional
 		let subscriptionOrders = allOrders.filter {
 			$0.expirationTime != nil
@@ -47,10 +53,12 @@ struct ProtectedOrderController: RouteCollection {
 		let validOrders = subscriptionOrders.filter {
 			$0.status == .completed && $0.expirationTime! > Date.now
 		}
-		return validOrders
+		var headers = HTTPHeaders()
+		headers.add(name: .eTag, value: validOrders.hashValue.description)
+		return try await validOrders.encodeResponse(status: .ok, headers: headers, for: req)
 	}
 	
-	func getOrder(_ req: Request) async throws -> Order {
+	func getOrder(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(User.self)
 		guard let idString = req.parameters.get("id"), let id = Order.IDValue(idString) else {
 			throw GeneralInputError.invalidID
@@ -60,7 +68,10 @@ struct ProtectedOrderController: RouteCollection {
 		guard let order = orders.filter({ $0.id! == id }).first else {
 			throw OrderError.idNotFound(id: id)
 		}
-		return order
+		
+		var headers = HTTPHeaders()
+		headers.add(name: .eTag, value: order.hashValue.description)
+		return try await order.encodeResponse(status: .ok, headers: headers, for: req)
 	}
 	
 	func createOrder(_ req: Request) async throws -> HTTPStatus {
@@ -88,7 +99,7 @@ struct ProtectedOrderController: RouteCollection {
 	}
 	// completeOrder should NOT be directly exposed via API endpoint, otherwise a user can access that endpoint and change the order status to completed. Instead, this should be called inside the payment's handler's callback function
 	func completeOrder(_ req: Request) async throws -> HTTPStatus {
-		let order = try await getOrder(req)
+		let order = try await getOrder(req).content.decode(Order.self)
 		guard order.status == .unPaid else {
 			throw OrderError.invalidStatus
 		}
@@ -100,7 +111,7 @@ struct ProtectedOrderController: RouteCollection {
 	
 	#warning("How should this be called? User shouldn't call this with its own authentication")
 	func refundOrder(_ req: Request) async throws -> HTTPStatus {
-		let order = try await getOrder(req)
+		let order = try await getOrder(req).content.decode(Order.self)
 		guard order.status == .completed else {
 			throw OrderError.invalidStatus
 		}
@@ -112,7 +123,7 @@ struct ProtectedOrderController: RouteCollection {
 	}
 		
 	func cancelOrder(_ req: Request) async throws -> HTTPStatus {
-		let order = try await getOrder(req)
+		let order = try await getOrder(req).content.decode(Order.self)
 		guard order.status == .unPaid else {
 			throw OrderError.invalidStatus
 		}
@@ -124,7 +135,7 @@ struct ProtectedOrderController: RouteCollection {
 	}
 
 	func deleteOrder(_ req: Request) async throws -> HTTPStatus {
-		let order = try await getOrder(req)
+		let order = try await getOrder(req).content.decode(Order.self)
 		guard order.status == .unPaid || order.status == .canceled else {
 			throw OrderError.invalidStatus
 		}

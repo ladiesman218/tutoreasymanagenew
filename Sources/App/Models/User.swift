@@ -114,5 +114,4 @@ extension User {
 	var publicInfo: PublicInfo {
 		.init(id: id!, email: self.email, username: self.username, firstName: self.firstName, lastName: self.lastName, registerTime: self.registerTime, lastLoginTime: self.lastLoginTime, profilePic: self.profilePic)
 	}
-	
 }

@@ -87,7 +87,7 @@ extension Course {
 		
 	}
 	
-	struct PublicInfo: Content {
+	struct PublicInfo: Content, Hashable {
 		let id: Course.IDValue
 		let name: String
 		let description: String
