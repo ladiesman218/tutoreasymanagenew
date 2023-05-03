@@ -15,30 +15,48 @@ struct PublicCourseController: RouteCollection {
 		let chapterRoute = routes.grouped("api", "chapter").grouped(Token.authenticator())
 		chapterRoute.get("**", use: getChapter)
 	}
-
+	
 	func getAllCourses(_ req: Request) async throws -> Response {
-		var headers = HTTPHeaders()
-		let courses = try await Course.query(on: req.db).all().compactMap { $0.publicList }
-		headers.add(name: .eTag, value: courses.hashValue.description)
-		return try await Course.query(on: req.db).all().compactMap { $0.publicList}.encodeResponse(status: .ok, headers: headers, for: req)
-	}
 		
+		let courses = try await Course.query(on: req.db).all().compactMap { $0.publicList }
+		let eTagValue = String(describing: courses).hash.description
+		
+		// Check if courses has been cached already and return NotModified response if the etags match
+		if eTagValue == req.headers.first(name: .ifNoneMatch) {
+			return Response(status: .notModified)
+		}
+		
+		var headers = HTTPHeaders()
+		headers.replaceOrAdd(name: .eTag, value: eTagValue)
+		let response = try await courses.encodeResponse(status: .ok, headers: headers, for: req)
+		
+		return response
+	}
+	
 	// This will return course info with its all stages info
 	func getCourse(_ req: Request) async throws -> Response {
 		guard let idString = req.parameters.get("id"), let id = Course.IDValue(idString) else {
 			throw GeneralInputError.invalidID
 		}
 		
-		if let course = try await Course.find(id, on: req.db), course.published {
-			guard FileManager.default.fileExists(atPath: course.directoryURL.path) else {
-				throw CourseError.noDirectoryFound(name: course.name)
-			}
-			var headers = HTTPHeaders()
-			headers.add(name: .eTag, value: course.publicInfo!.hashValue.description)
-			return try await course.publicInfo!.encodeResponse(status: .ok, headers: headers, for: req)
-		} else {
+		guard let course = try await Course.find(id, on: req.db), let publicInfo = course.publicInfo else {
 			throw CourseError.idNotFound(id: id)
 		}
+		
+		guard FileManager.default.fileExists(atPath: course.directoryURL.path) else {
+			throw CourseError.noDirectoryFound(name: course.name)
+		}
+		
+		let eTagValue = String(describing: publicInfo).hash.description
+		// Check if course has been cached already and return NotModified response if the etags match
+		if eTagValue == req.headers.first(name: .ifNoneMatch) {
+			return Response(status: .notModified)
+		}
+		var headers = HTTPHeaders()
+		headers.replaceOrAdd(name: .eTag, value: eTagValue)
+		
+		let response = try await publicInfo.encodeResponse(status: .ok, headers: headers, for: req)
+		return response
 	}
 	
 	// This will return stage info with all its chapters
@@ -46,22 +64,38 @@ struct PublicCourseController: RouteCollection {
 		let pathComponents = req.parameters.getCatchall()
 		
 		let stageURL = try await parseStageOrChapter(from: pathComponents, req: req, index: 2)
-		let stage = Stage(directoryURL: stageURL)
+		let stage = Stage(directoryURL: stageURL).publicInfo
+		let eTagValue = String(describing: stage).hash.description
+		
+		// Check if stage has been cached already and return NotModified response if the etags match
+		if eTagValue == req.headers.first(name: .ifNoneMatch) {
+			return Response(status: .notModified)
+		}
 		
 		var headers = HTTPHeaders()
-		headers.add(name: .eTag, value: stage.publicInfo.hashValue.description)
-		return try await stage.publicInfo.encodeResponse(status: .ok, headers: headers, for: req)
+		headers.replaceOrAdd(name: .eTag, value: eTagValue)
+		
+		let response = try await stage.encodeResponse(status: .ok, headers: headers, for: req)
+		return response
 	}
 	
 	func getChapter(_ req: Request) async throws -> Response {
 		let pathComponents = req.parameters.getCatchall()
-
+		
 		let chapterURL = try await parseStageOrChapter(from: pathComponents, req: req, index: 3)
 		let chapter = Chapter(directoryURL: chapterURL)
 		
+		let eTagValue = String(describing: chapter).hash.description
+		
+		// Check if chapter has been cached already and return NotModified response if the etags match
+		if eTagValue == req.headers.first(name: .ifNoneMatch) {
+			return Response(status: .notModified)
+		}
+		
 		var headers = HTTPHeaders()
-		headers.add(name: .eTag, value: chapter.hashValue.description)
-		return try await chapter.encodeResponse(status: .ok, headers: headers, for: req)
+		headers.replaceOrAdd(name: .eTag, value: eTagValue)
+		let response = try await chapter.encodeResponse(status: .ok, headers: headers, for: req)
+		return response
 	}
 	
 	func parseStageOrChapter(from pathComponents: [String], req: Request, index: Int) async throws -> URL {

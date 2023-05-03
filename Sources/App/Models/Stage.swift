@@ -34,7 +34,7 @@ struct Stage: Codable {
 	}
 	
 	// Without this, querying a stage will never get back its chapters, since chapters are defined as a caclulated property.
-	struct PublicInfo: Content, Hashable {
+	struct PublicInfo: Content {
 		let directoryURL: URL
 		let name: String
 		let imageURL: URL?

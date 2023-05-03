@@ -1,7 +1,7 @@
 import Vapor
 import Fluent
 
-final class Order: Model, Content, Hashable {
+final class Order: Model, Content {
 	
 	// To generate an order, first query all associated course's id, generate courseCaches based on the found results, then save the caches along with the user and other order info in db. Upon successful saving, start a timer, after given time period(15 mins for example), the order status should be changed to canceled automatically if hasn't been changed to completed already.
 #warning("After a longer time period(1 month for example), db should automatically purge all unpaid and canceled orders.")
@@ -64,40 +64,17 @@ final class Order: Model, Content, Hashable {
 		self.refundTime = refundTime
 		self.expirationTime = expirationTime
 	}
-	
-	static func ==(lhs: Order, rhs: Order) -> Bool {
-		return lhs.id == rhs.id &&
-		lhs.status == rhs.status &&
-		lhs.items == rhs.items &&
-		lhs.paymentAmount == rhs.paymentAmount &&
-		lhs.originalTransactionID == rhs.originalTransactionID &&
-		lhs.transactionID == rhs.transactionID &&
-		lhs.iapIdentifier == rhs.iapIdentifier &&
-		lhs.generateTime == rhs.generateTime &&
-		lhs.completeTime == rhs.completeTime &&
-		lhs.cancelTime == rhs.cancelTime &&
-		lhs.refundTime == rhs.refundTime &&
-		lhs.expirationTime == rhs.expirationTime
-	}
-
-	func hash(into hasher: inout Hasher) {
-		hasher.combine(id)
-		hasher.combine(status)
-		hasher.combine(items)
-		hasher.combine(paymentAmount)
-		hasher.combine(originalTransactionID)
-		hasher.combine(transactionID)
-		hasher.combine(iapIdentifier)
-		hasher.combine(generateTime)
-		hasher.combine(completeTime)
-		hasher.combine(cancelTime)
-		hasher.combine(refundTime)
-		hasher.combine(expirationTime)
-	}
 }
 
 extension Order {
 	struct Input: Decodable {
 		let courseIDs: [Course.IDValue]
+	}
+}
+
+// String(descrbing: order) generates lots of nonsense, clean it.
+extension Order: CustomStringConvertible {
+	var description: String {
+		return "id: \(String(describing: id)), status: \(status.rawValue), items: \(items), userID: \($user.id), paymentAmount: \(paymentAmount), originalTransactionID: \(String(describing: originalTransactionID)), transactionID: \(transactionID), iapIdentifier: \(String(describing: iapIdentifier)), generateTime: \(String(describing: generateTime)), completeTime: \(String(describing: completeTime)), cancelTime: \(String(describing: cancelTime)), refundTime: \(String(describing: refundTime)), expirationTime: \(String(describing: expirationTime))"
 	}
 }

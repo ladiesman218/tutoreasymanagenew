@@ -13,7 +13,6 @@ struct FileController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let publicImageRoute = routes.grouped("api", "image")
 		publicImageRoute.get("**", use: publicGetImageData)
-//        publicImageRoute.get("banner", "paths", use: getBannerPaths)
 		
 		let contentRoute = routes.grouped("api", "content").grouped(Token.authenticator())
 		contentRoute.get("**", use: getCourseContent)
@@ -46,7 +45,6 @@ struct FileController: RouteCollection {
 		}
 		
 		let validOrders = try await ProtectedOrderController().getAllValidOrders(req).content.decode([Order].self)
-		print(validOrders)
 		// If an valid order contains the given course
 		guard !validOrders.filter({ order in
 			order.items.contains { $0.name == courseName }
@@ -71,21 +69,16 @@ struct FileController: RouteCollection {
 		
 	func getCourseContent(_ req: Request) async throws -> Response {
 		let url = try await accessibleURL(req)
-		return req.fileio.streamFile(at: url.path)
+		let response = req.fileio.streamFile(at: url.path)
+		
+		// no-cache means caches must check with the origin server for [validation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#Cache_validation) before using the cached copy.
+		response.headers.replaceOrAdd(name: .cacheControl, value: "no-cache")
+		
+		if response.headers.contentType?.type == "video" {
+			response.headers.replaceOrAdd(name: .cacheControl, value: "no-store")
+		}
+		return response
 	}
-    
-    func getBannerPaths(req: Request) -> [String] {
-        var paths = [String]()
-        for i in 1 ... 10 {
-            for imageExtension in ImageExtension.allCases {
-                let bannerURL = courseRoot.appendingPathComponent("banner\(i)", isDirectory: false).appendingPathExtension(imageExtension.rawValue)
-                if FileManager.default.fileExists(atPath: bannerURL.path) {
-                    paths.append(bannerURL.path)
-                }
-            }
-        }
-        return paths
-    }
 }
 
 

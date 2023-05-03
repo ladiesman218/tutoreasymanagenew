@@ -2,6 +2,8 @@ import Fluent
 import FluentPostgresDriver
 
 #warning("get payment amount and save it")
+#warning("observe orderStatus, when changed to completed, add CompleteTime")
+#warning("observe valid orders, make sure completeTime is later than current time")
 struct CreateOrder: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let defaultStatus = SQLColumnConstraintAlgorithm.default(Order.Status.unPaid.rawValue)

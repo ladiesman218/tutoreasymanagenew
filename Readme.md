@@ -31,4 +31,4 @@ Stages and chapters are identified as folders.
 
 
 
-For all API endpoint that should be or can be cached on client side, return encoded response instead of actual data. Before returning the response, create a http header and add etag so that client side has a way to know if the cached response is stale. For value of etag header, use 
+For all API endpoint that should be or can be cached on client side, return encoded response instead of actual data. Before returning the response, create a http header and add etag so that client side has a way to know if the cached response is stale. For value of etag header, use String(describing: object).hash.description. If a property of the object has changed, the String(describing: object) should be different, hash of the description is of type Int, so we use the 2nd description to convert that int to string, which makes it easier for adding to/getting from headers for comparing. This is better than making the class/struct comform to Hashable and use its hashValue, becoz according to documentation, "hashValue is not guaranteed to be equal across different executions of your program".
