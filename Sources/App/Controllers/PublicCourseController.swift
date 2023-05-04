@@ -19,7 +19,7 @@ struct PublicCourseController: RouteCollection {
 	func getAllCourses(_ req: Request) async throws -> Response {
 		
 		let courses = try await Course.query(on: req.db).all().compactMap { $0.publicList }
-		let eTagValue = String(describing: courses).hash.description
+		let eTagValue = String(describing: courses).persistantHash.description
 		
 		// Check if courses has been cached already and return NotModified response if the etags match
 		if eTagValue == req.headers.first(name: .ifNoneMatch) {
@@ -47,7 +47,7 @@ struct PublicCourseController: RouteCollection {
 			throw CourseError.noDirectoryFound(name: course.name)
 		}
 		
-		let eTagValue = String(describing: publicInfo).hash.description
+		let eTagValue = String(describing: publicInfo).persistantHash.description
 		// Check if course has been cached already and return NotModified response if the etags match
 		if eTagValue == req.headers.first(name: .ifNoneMatch) {
 			return Response(status: .notModified)
@@ -65,7 +65,7 @@ struct PublicCourseController: RouteCollection {
 		
 		let stageURL = try await parseStageOrChapter(from: pathComponents, req: req, index: 2)
 		let stage = Stage(directoryURL: stageURL).publicInfo
-		let eTagValue = String(describing: stage).hash.description
+		let eTagValue = String(describing: stage).persistantHash.description
 		
 		// Check if stage has been cached already and return NotModified response if the etags match
 		if eTagValue == req.headers.first(name: .ifNoneMatch) {
@@ -85,7 +85,7 @@ struct PublicCourseController: RouteCollection {
 		let chapterURL = try await parseStageOrChapter(from: pathComponents, req: req, index: 3)
 		let chapter = Chapter(directoryURL: chapterURL)
 		
-		let eTagValue = String(describing: chapter).hash.description
+		let eTagValue = String(describing: chapter).persistantHash.description
 		
 		// Check if chapter has been cached already and return NotModified response if the etags match
 		if eTagValue == req.headers.first(name: .ifNoneMatch) {

@@ -22,7 +22,7 @@ struct ProtectedOrderController: RouteCollection {
 	func getAllOrders(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(User.self)
 		let orders = try await user.$orders.get(on: req.db)
-		let eTagValue = String(describing: orders).hash.description
+		let eTagValue = String(describing: orders).persistantHash.description
 		
 		// Check if orders has been cached already and return NotModified response if the etags match
 		if eTagValue == req.headers.first(name: .ifNoneMatch) {
@@ -50,7 +50,7 @@ struct ProtectedOrderController: RouteCollection {
 		}
 		
 		
-		let eTagValue = String(describing: validOrders).hash.description
+		let eTagValue = String(describing: validOrders).persistantHash.description
 		
 		// Check if orders has been cached already and return NotModified response if the etags match
 		if eTagValue == req.headers.first(name: .ifNoneMatch) {
@@ -95,7 +95,7 @@ struct ProtectedOrderController: RouteCollection {
 			throw OrderError.idNotFound(id: id)
 		}
 		
-		let eTagValue = String(describing: order).hash.description
+		let eTagValue = String(describing: order).persistantHash.description
 		
 		// Check if order has been cached already and return NotModified response if the etags match
 		if eTagValue == req.headers.first(name: .ifNoneMatch) {
