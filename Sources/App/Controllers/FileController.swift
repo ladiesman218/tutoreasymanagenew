@@ -64,7 +64,8 @@ struct FileController: RouteCollection {
 		}
 		
 		let path = pathComponents.generatePath()
-		return req.fileio.streamFile(at: path)
+		let response = req.fileio.streamFile(at: path)
+		return response
     }
 		
 	func getCourseContent(_ req: Request) async throws -> Response {
