@@ -7,7 +7,7 @@ enum CourseError: Error {
 	case notForSale
 	case invalidAppStoreID
 	case notPurchased(name: String)
-	case noDirectoryFound(name: String)
+	case fileNotFound(name: String)
 }
 extension CourseError: AbortError, DebuggableError {
 	var status: HTTPResponseStatus {
@@ -20,8 +20,8 @@ extension CourseError: AbortError, DebuggableError {
 				return .badRequest
 			case .notPurchased:
 				return .paymentRequired
-			case .noDirectoryFound:
-				return .internalServerError
+			case .fileNotFound:
+				return .notFound
 		}
 	}
 	
@@ -39,8 +39,8 @@ extension CourseError: AbortError, DebuggableError {
 				return "无效App Store ID"
 			case .notPurchased(let name):
 				return "请先购买'\(name)'课程"
-			case .noDirectoryFound(let name):
-				return "\(name)文件丢失"
+			case .fileNotFound(let name):
+				return "\(name)文件不存在"
 		}
 	}
 	
@@ -58,8 +58,8 @@ extension CourseError: AbortError, DebuggableError {
 				return "invalid_app_store_id"
 			case .notPurchased:
 				return "course_not_purchased"
-			case .noDirectoryFound:
-				return "course_directory_not_found"
+			case .fileNotFound:
+				return "file_not_found"
 		}
 	}
 	

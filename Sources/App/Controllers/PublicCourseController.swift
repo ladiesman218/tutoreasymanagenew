@@ -44,7 +44,7 @@ struct PublicCourseController: RouteCollection {
 		}
 		
 		guard FileManager.default.fileExists(atPath: course.directoryURL.path) else {
-			throw CourseError.noDirectoryFound(name: course.name)
+			throw CourseError.fileNotFound(name: course.name)
 		}
 		
 		let eTagValue = String(describing: publicInfo).persistantHash.description
@@ -114,7 +114,7 @@ struct PublicCourseController: RouteCollection {
 		
 		let url = try pathComponents.generateURL()
 		guard FileManager.default.fileExists(atPath: url.path) else {
-			throw CourseError.noDirectoryFound(name: pathComponents.last!)
+			throw CourseError.fileNotFound(name: pathComponents.last!)
 		}
 		return url
 	}
