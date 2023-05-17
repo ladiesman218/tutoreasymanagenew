@@ -65,6 +65,8 @@ struct FileController: RouteCollection {
 		
 		let path = pathComponents.generatePath()
 		let response = req.fileio.streamFile(at: path)
+		// Same request in 1 second doesn't need revalidation, after expiration, in the following 1 year cached is served while revalidating.
+		response.headers.replaceOrAdd(name: .cacheControl, value: "max-age=1, stale-while-revalidate=31536000")
 		return response
 	}
 	

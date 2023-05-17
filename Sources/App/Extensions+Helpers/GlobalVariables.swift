@@ -6,7 +6,6 @@ let workingDirectory = URL(fileURLWithPath: FileManager.default.currentDirectory
 let coursesDirectoryName = "Courses"
 let courseRoot = workingDirectory.deletingLastPathComponent().appendingPathComponent(coursesDirectoryName, isDirectory: true).standardizedFileURL
 
-//let courseRoot = URL(fileURLWithPath: "../Courses", isDirectory: true).standardizedFileURL
 let appleRootCert = "" // Root certificate for verify in app purchase notifications, wrong value here doesn't change anything, why?
 let appleBundleID = "com.dunce.TutorEasy"
 let vipIAPIdentifier = "vip_test"
