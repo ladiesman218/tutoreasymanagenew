@@ -14,6 +14,7 @@ extension Array where Element == String {
 		return (path.hasPrefix("/")) ? path : "/" + path
 	}
 	
+	// Generate a file url from an array of strings
 	func generateURL() throws -> URL {
 		// Make sure the array is not empty
 		guard !self.isEmpty else { throw GeneralInputError.invalidURL }

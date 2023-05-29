@@ -84,6 +84,9 @@ struct PublicCourseController: RouteCollection {
 		
 		let chapterURL = try await parseStageOrChapter(from: pathComponents, req: req, index: 3)
 		let chapter = Chapter(directoryURL: chapterURL)
+		if !chapter.isFree {
+			let url = try await FileController().accessibleURL(req)
+		}
 		
 		let eTagValue = String(describing: chapter).persistantHash.description
 		

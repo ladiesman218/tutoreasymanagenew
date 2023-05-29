@@ -17,7 +17,8 @@ struct FileController: RouteCollection {
 		let contentRoute = routes.grouped("api", "content").grouped(Token.authenticator())
 		contentRoute.get("**", use: getCourseContent)
 	}
-	
+
+	// Given a request, get all its parameters(everything else from the grouped components), generate a file url from them, validate it should be accessed and return it, or throw an error if it shouldn't.
 	func accessibleURL(_ req: Request) async throws -> URL {
 		let pathComponents = req.parameters.getCatchall()
 		
@@ -31,7 +32,7 @@ struct FileController: RouteCollection {
 			throw GeneralInputError.invalidURL
 		}
 		
-		// If chapter name contains string that indicate it's a free trial, return true directly.
+		// If chapter name contains string that indicate it's a free trial, return the url directly.
 		let chapterName = pathComponents[coursesDirIndex + 3]
 		guard chapterName.range(of: trialChpaterRegex, options: .regularExpression) == nil else {
 			return url
