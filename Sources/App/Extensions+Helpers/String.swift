@@ -14,4 +14,12 @@ extension String {
 			($0 << 5) &+ $0 &+ Int($1)
 		}
 	}
+	
+	// For parsing chapter names
+	var withoutTrail: String {
+		return self.replacing(trailRegex, with: "")
+	}
+	var withoutNum: String {
+		return self.replacing(chapterPrefixRegex, with: "")
+	}
 }

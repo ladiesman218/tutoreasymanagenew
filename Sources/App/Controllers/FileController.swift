@@ -34,9 +34,12 @@ struct FileController: RouteCollection {
 		
 		// If chapter name contains string that indicate it's a free trial, return the url directly.
 		let chapterName = pathComponents[coursesDirIndex + 3]
-		guard chapterName.range(of: trialChpaterRegex, options: .regularExpression) == nil else {
+		guard !chapterName.contains(trailRegex) else {
 			return url
 		}
+//		guard chapterName.range(of: trialChpaterRegex, options: .regularExpression) == nil else {
+//			return url
+//		}
 		
 		// Here means it's not a free trial.
 		let courseName = pathComponents[coursesDirIndex + 1]
