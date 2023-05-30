@@ -54,15 +54,15 @@ struct Chapter: Content {
 //			let bInsName = "搭建说明.pdf"
 //			enum TPlan: String {
 //				typealias RawValue = String
-//				
+//
 //			case fullname = "self.name + tPlanName"
 //			}
-//			
+//
 //			// Get pdf url for teaching plan file
 //			if FileManager.default.fileExists(atPath: directoryURL.appendingPathComponent("教案.pdf").path) {
 //				self.teachingPlanURL = directoryURL.appendingPathComponent("教案.pdf")
 //			} else if FileManager.default.fileExists(atPath: directoryURL.appendingPathComponent("").path) {
-//				
+//
 //			}
 //			self.bInstructionURL = URL(string: "")
 //		}

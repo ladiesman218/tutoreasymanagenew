@@ -1,10 +1,10 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.7
 import PackageDescription
 
 let package = Package(
 	name: "TutorEasyManage",
 	platforms: [
-		.macOS(.v12)
+		.macOS(.v13)
 	],
 	dependencies: [
 		// 💧 A server-side Swift web framework.

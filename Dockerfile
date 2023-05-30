@@ -1,4 +1,4 @@
-FROM swift:5.6-focal as build
+FROM swift:5.7-focal as build
 #2
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && apt-get -q update \
@@ -23,7 +23,7 @@ RUN [ -d /build/Resources ] && \
     { mv /build/Resources ./Resources && \
     chmod -R a-w ./Resources; } || true
 #7
-FROM swift:5.6-focal-slim
+FROM swift:5.7-focal-slim
 #8
 RUN export DEBIAN_FRONTEND=noninteractive \
     DEBCONF_NONINTERACTIVE_SEEN=true && \
