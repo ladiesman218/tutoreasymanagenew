@@ -25,7 +25,7 @@ struct Chapter: Content {
 		self.directoryURL = directoryURL
 		let namePath = directoryURL.lastPathComponent
 		self.name = namePath.withoutTrail.withoutNum
-		self.isFree = namePath.contains(trailRegex)
+		self.isFree = namePath.contains(trialRegex)
 
 		// Get urls for all pdfs if file is found.
 		// Say for example, a chapter is named by its directory name"第1课：埃菲尔铁塔-免费", check if a pdf file with the given name suffix exists in directoryURL among the combinations of the following 4: its full form, without trail form(第1课：埃菲尔铁塔), without number prefix form(埃菲尔铁塔-免费), and pure name without both form(埃菲尔铁塔). So All 4 following cases return the url: 第1课：埃菲尔铁塔-免费教案.pdf, 第1课：埃菲尔铁塔教案.pdf, 埃菲尔铁塔-免费教案.pdf, 埃菲尔铁塔教案.pdf

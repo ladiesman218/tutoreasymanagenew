@@ -13,7 +13,7 @@ let vipIAPIdentifier = "vip_test"
 
 let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
 let phoneNumberRegex = "^([+](\\d{1,3}|\\d{1,2}[- ]{1,}\\d{3,4})[- ]{1,}){0,1}\\d{5,20}$"
-let trailRegex = Regex {
+let trialRegex = Regex {
 	ZeroOrMore(.whitespace)
 	OneOrMore("-")
 	OneOrMore {
@@ -51,10 +51,9 @@ let chapterPrefixRegex = Regex {
 	}
 	ZeroOrMore(.whitespace)
 }
-	
-	let numberRegex = "[0-9]+"
-	let userNameLength = Range(4...35)
-	let nameLength = Range(3...40)
-	let passwordLength = Range(6...40)
-	
-	let nonAlphanumerics = CharacterSet.alphanumerics.inverted	// Alphanumerics contains letters in all language, special letters. But doesn't contain tabs, spaces, marks. Alphanumerics could be used in names. Notice here we used the `inverted` function to get the inverted result, to check if illegal characters are presented.
+
+let userNameLength = Range(4...35)
+let nameLength = Range(3...40)
+let passwordLength = Range(6...40)
+
+let nonAlphanumerics = CharacterSet.alphanumerics.inverted	// Alphanumerics contains letters in all language, special letters. But doesn't contain tabs, spaces, marks. Alphanumerics could be used in names. Notice here we used the `inverted` function to get the inverted result, to check if illegal characters are presented.

@@ -17,7 +17,7 @@ extension String {
 	
 	// For parsing chapter names
 	var withoutTrail: String {
-		return self.replacing(trailRegex, with: "")
+		return self.replacing(trialRegex, with: "")
 	}
 	var withoutNum: String {
 		return self.replacing(chapterPrefixRegex, with: "")
