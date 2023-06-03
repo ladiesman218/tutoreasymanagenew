@@ -33,6 +33,8 @@ struct Stage: Codable {
 		
 		if let desc = try? String(contentsOf: directoryURL.appendingPathComponent("介绍.txt")) {
 			self.description = desc
+		} else if let desc = try? String(contentsOf: directoryURL.appendingPathComponent("\(name).txt")) {
+			self.description = desc
 		} else {
 			self.description = ""
 		}
