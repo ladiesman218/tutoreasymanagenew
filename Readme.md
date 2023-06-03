@@ -1,6 +1,6 @@
 
 Use this command to transfer files to remote servers:
-`rsync -iavhe "ssh -i ~/.ssh/tutoreasymanage_key.pem" /Users/leigao/myProjects/TutorEasyManage/ azureuser@20.243.114.35:/home/azureuser/TutorEasyManage/ --delete`
+`rsync -iavzPh Courses root@38.143.9.94:/tutorEasy/ -e "ssh -p 63916"`
 -i: output a change-summary for all updates
 -a: archive mode, equals to -rlptgoD
 -v: verbose mode
