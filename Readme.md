@@ -1,12 +1,13 @@
 
 Use this command to transfer files to remote servers:
-`rsync -iavzPh Courses root@38.143.9.94:/tutorEasy/ -e "ssh -p 63916"`
+`rsync -avzPh appImage.tar.gz root@38.143.9.94:/tutorEasy/tutoreasymanagenew -e "ssh -p 63916"`
 -i: output a change-summary for all updates
 -a: archive mode, equals to -rlptgoD
 -v: verbose mode
 -h: human readable numbers
--e:  allows you to choose an alternative remote shell program to use for communication between the local and remote copies of rsync. This enables the "ssh -i ~/.ssh/tutoreasymanage_key.pem" part which allows us to ues ssh key.
---delete: delete removed files in destination folder. This only works when both source and target/destination are both deirectories, means they have trailing slashes. 
+-p: Gives an progress bar
+-e:  allows you to choose an alternative remote shell program to use for communication between the local and remote copies of rsync. This enables the "ssh -p 63916" part which allows us to ues specified port for ssh connection.
+<!----delete: delete removed files in destination folder. This only works when both source and target/destination are both deirectories, means they have trailing slashes. -->
 Use -n to dry run first, see what will be deleted/updated. Without deletion, renamed old files will stay there and may cause compile errors.
 
 PDF editing:

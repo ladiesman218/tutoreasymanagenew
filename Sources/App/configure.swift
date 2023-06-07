@@ -26,7 +26,9 @@ public func configure(_ app: Application) throws {
 		config.tlsConfiguration?.certificateVerification = .none
 		app.databases.use(.postgres(configuration: config), as: .psql)
 	} else {
-		app.databases.use(.postgres(hostname: Environment.get("DATABASE_HOST") ?? "localhost", port: databasePort, username: Environment.get("DATABASE_USERNAME") ?? "vapor_username", password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password", database: Environment.get("DATABASE_NAME") ?? databaseName), as: .psql)
+		let postgres = DatabaseConfigurationFactory.postgres(hostname: Environment.get("DATABASE_HOST") ?? "localhost", port: databasePort, username: Environment.get("DATABASE_USERNAME") ?? "vapor_username", password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password", database: Environment.get("DATABASE_NAME") ?? databaseName)
+		app.databases.use(postgres, as: .psql)
+		print(app.databases.configuration(for: .psql).debugDescription)
 	}
 	
 	

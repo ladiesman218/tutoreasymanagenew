@@ -11,7 +11,7 @@ COPY ./Package.* ./
 RUN swift package resolve
 #5
 COPY . .
-RUN swift build --enable-test-discovery -c release
+RUN swift build --use-integrated-swift-driver -c release
 #6
 WORKDIR /staging
 RUN cp "$(swift build --package-path /build -c release \
