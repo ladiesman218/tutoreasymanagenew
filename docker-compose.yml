@@ -9,6 +9,8 @@
 #   Start app: docker-compose up app
 #   Stop all: docker-compose down
 #
+#   docker-compose down will remove containers, next time when docker-compose up, containers will be back as long as images are there. DO NOT prune on volume with -a option when containers are down, otherwise database will be lost!
+#
 version: '3.7'
 volumes:
   db_data:
@@ -43,11 +45,11 @@ services:
     image: postgres:12-alpine
 # 14
     volumes:
-      #- db_data:/var/lib/postgresql/data/pgdata
-      - db_data:/Users/leigao/myProjects/Courses/postgresql
+      - db_data:/tutoreasymanagenew/psql_db
 # 15
     environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
+      # PGDATA will be the path where db files reside in the db container, this should be set to the same value as in volume's db_data. Since we set it as an volume, db container will create a volume when first start up, check `docker volume ls` can see that, volume's name should be <service_name>_<volume_name>, which in our case is tutoreasymanage_db_data. Outside the container itself, where does the db file actually lives in the host???
+      PGDATA: /tutoreasymanagenew/psql_db
       POSTGRES_USER: tutor_easy
       POSTGRES_PASSWORD: Gaolei123!
       POSTGRES_DB: tutoreasymanage
