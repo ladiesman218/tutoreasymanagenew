@@ -1,4 +1,4 @@
-FROM swift:5.8-focal as build
+FROM swift:5.8.1-focal as build
 #2
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && apt-get -q update \
@@ -11,7 +11,7 @@ COPY ./Package.* ./
 RUN swift package resolve
 #5
 COPY . .
-RUN swift build --use-integrated-swift-driver -c release
+RUN swift build --static-swift-stdlib -c release
 #6
 WORKDIR /staging
 RUN cp "$(swift build --package-path /build -c release \

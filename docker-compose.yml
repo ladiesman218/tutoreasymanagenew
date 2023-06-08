@@ -55,8 +55,3 @@ services:
       POSTGRES_DB: tutoreasymanage
     ports:
       - '5432:5432'
-  start_dependencies:
-    image: dadarek/wait-for-dependencies
-    depends_on:
-      - db
-    command: db:5432
