@@ -4,6 +4,7 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && apt-get -q update \
     && apt-get -q dist-upgrade -y \
     && rm -rf /var/lib/apt/lists/*
+
 #3
 WORKDIR /build
 #4
@@ -29,6 +30,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     DEBCONF_NONINTERACTIVE_SEEN=true && \
     apt-get -q update && \
     apt-get -q dist-upgrade -y && \
+		apt-get -q install language-pack-zh-hans -y && \
     rm -r /var/lib/apt/lists/*
 #9
 RUN useradd --user-group --create-home --system \
