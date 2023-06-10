@@ -19,8 +19,9 @@ enum ImageExtension: String, CaseIterable {
 }
 
 func getImageURLInDirectory(url: URL) -> URL? {
-	
+	// lastPathComponent should be the name of the directory under Courses folder.
 	let lastPath = url.lastPathComponent
+	// In case the url is for chapter, pre-process its name
 	let withoutTrail = lastPath.replacing(trialRegex, with: "")
 	let withoutPrefix = lastPath.replacing(chapterPrefixRegex, with: "")
 	let pureName = withoutPrefix.replacing(trialRegex, with: "")
