@@ -1,14 +1,6 @@
 
-Use this command to transfer files to remote servers:
-`rsync -avzPh appImage.tar.gz root@38.143.9.94:/tutorEasy/tutoreasymanagenew -e "ssh -p 63916"`
--i: output a change-summary for all updates
--a: archive mode, equals to -rlptgoD
--v: verbose mode
--h: human readable numbers
--p: Gives an progress bar
--e:  allows you to choose an alternative remote shell program to use for communication between the local and remote copies of rsync. This enables the "ssh -p 63916" part which allows us to ues specified port for ssh connection.
-<!----delete: delete removed files in destination folder. This only works when both source and target/destination are both deirectories, means they have trailing slashes. -->
-Use -n to dry run first, see what will be deleted/updated. Without deletion, renamed old files will stay there and may cause compile errors.
+For depoly service to remote server, check markdown file named `Deploy with Docker.md`
+
 
 PDF editing:
 1. PDF expert could do editing(verified), Adobe acrobat reader can do editing and link target verification in one place(and easier, without the url encode steps)
@@ -23,12 +15,7 @@ When setting up IAP in appstore connect, make sure "VIP" is contained in VIP mem
 
 Course directory structure:
 Stages and chapters are identified as folders. 
-1. Folders for stages should be named with numbers at the VERY BEGINNING. If the course contains more than 10 stage, those numbers should be in same digit for each stage folder, Eg: 01xxx, 02yyy, etc,  otherwise sorting will be wrong, 10 could go before 1 since it's string type when sorted.
-2. Numbers prefix will be removed from name, when initializing stages.
-3. Each chapter should have a number in its folder name, position of the numbers could be in the middle of the name but try to keep the position same for each chapter folder. 
-4. Again the digit of number in chapter folder's name should be same, try to keep all of them 2 digit, eg: 01, 02
-5. In each chapter, there should be a "teacher.pdf" file
-
+tobe update
 
 
 

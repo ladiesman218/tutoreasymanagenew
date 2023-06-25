@@ -24,8 +24,7 @@ struct FileController: RouteCollection {
 		
 		// Make sure the path is not directory
 		let url = try pathComponents.generateURL()
-		guard !url.isDirectory else {
-			throw GeneralInputError.invalidURL }
+		guard !url.isDirectory else { throw GeneralInputError.invalidURL }
 		
 		// coursesDirectoryName is where we put all course files, currently it's 'courses', following should be the name of the course, next should be the name for each stage's folder, then the name for chapter's folder. Offset coursesDirIndex by 3 to get chapter name
 		guard let coursesDirIndex = pathComponents.firstIndex(of: coursesDirectoryName), pathComponents.count > coursesDirIndex + 3 else {
@@ -37,9 +36,6 @@ struct FileController: RouteCollection {
 		guard !chapterName.contains(trialRegex) else {
 			return url
 		}
-//		guard chapterName.range(of: trialChpaterRegex, options: .regularExpression) == nil else {
-//			return url
-//		}
 		
 		// Here means it's not a free trial.
 		let courseName = pathComponents[coursesDirIndex + 1]

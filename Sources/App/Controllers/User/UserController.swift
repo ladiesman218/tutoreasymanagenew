@@ -32,6 +32,7 @@ struct UserController: RouteCollection {
 	
 	func login(_ req: Request) async throws -> Token {
 		let user: User
+		
 		do {
 			user = try req.auth.require(User.self)
 		} catch {
