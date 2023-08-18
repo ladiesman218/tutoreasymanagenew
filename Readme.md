@@ -1,6 +1,6 @@
 
 For depoly service to remote server, check markdown file named `Deploy with Docker.md`
-
+All sorting is done on server side, eg: stages for a course are sorted by their names for now, chapters for a stage are sorted by the first appearence of an int value in their names.
 
 PDF editing:
 1. PDF expert could do editing(verified), Adobe acrobat reader can do editing and link target verification in one place(and easier, without the url encode steps)
@@ -15,7 +15,6 @@ When setting up IAP in appstore connect, make sure "VIP" is contained in VIP mem
 
 Course directory structure:
 Stages and chapters are identified as folders. 
-tobe update
 
 
 

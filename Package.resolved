@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server/async-http-client.git",
       "state" : {
-        "revision" : "5bee16a79922e3efcb5cea06ecd27e6f8048b56b",
-        "version" : "1.13.1"
+        "revision" : "78db67e5bf4a8543075787f228e8920097319281",
+        "version" : "1.18.0"
       }
     },
     {
@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/async-kit.git",
       "state" : {
-        "revision" : "3be4b6418d1e8b835b0b1a1bee06b249faa4da5f",
-        "version" : "1.14.0"
+        "revision" : "eab9edff78e8ace20bd7cb6e792ab46d54f59ab9",
+        "version" : "1.18.0"
       }
     },
     {
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/console-kit.git",
       "state" : {
-        "revision" : "a7e67a1719933318b5ab7eaaed355cde020465b1",
-        "version" : "4.5.0"
+        "revision" : "447f1046fb4e9df40973fe426ecb24a6f0e8d3b4",
+        "version" : "4.6.0"
       }
     },
     {
@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/fluent.git",
       "state" : {
-        "revision" : "2da106f46b093885f77fa03e3c719ab5bb8cfab4",
-        "version" : "4.6.0"
+        "revision" : "4b4d8bf15a06fd60137e9c543e5503c4b842654e",
+        "version" : "4.8.0"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/fluent-kit.git",
       "state" : {
-        "revision" : "be7912ee4991bcc8a5390fac0424d1d08221dcc6",
-        "version" : "1.36.1"
+        "revision" : "ccea9820fe31076f994f7c1c1d584009cad6bdb2",
+        "version" : "1.44.1"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/fluent-postgres-driver.git",
       "state" : {
-        "revision" : "4808c539f08306ae6002f6106813a9350baa141b",
-        "version" : "2.5.0"
+        "revision" : "a538fc647f82d915eb84e0a12ca9b08c513e57c4",
+        "version" : "2.8.0"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/jwt.git",
       "state" : {
-        "revision" : "506d238a707c0e7c1d2cf690863902eaf3bc4e94",
-        "version" : "4.2.1"
+        "revision" : "d65f32bfd08fae5910d603028be5dec4f35b3482",
+        "version" : "4.2.2"
       }
     },
     {
@@ -77,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/multipart-kit.git",
       "state" : {
-        "revision" : "0d55c35e788451ee27222783c7d363cb88092fab",
-        "version" : "4.5.2"
+        "revision" : "1adfd69df2da08f7931d4281b257475e32c96734",
+        "version" : "4.5.4"
       }
     },
     {
@@ -86,8 +86,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/postgres-kit.git",
       "state" : {
-        "revision" : "1174d9bc57798aba7a99451e5380c0eb0fb796d8",
-        "version" : "2.9.0"
+        "revision" : "80ab7737dac4fccd4a8ad38743828dcb71ba7ac8",
+        "version" : "2.12.2"
       }
     },
     {
@@ -95,8 +95,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/postgres-nio.git",
       "state" : {
-        "revision" : "7daf026e145de2c07d6e37f4171b1acb4b5f22b1",
-        "version" : "1.12.1"
+        "revision" : "aa9273c06a0f42281635eaf0400aa024157c8fa9",
+        "version" : "1.17.0"
       }
     },
     {
@@ -104,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/routing-kit.git",
       "state" : {
-        "revision" : "ffac7b3a127ce1e85fb232f1a6271164628809ad",
-        "version" : "4.6.0"
+        "revision" : "e0539da5b60a60d7381f44cdcf04036f456cee2f",
+        "version" : "4.8.0"
       }
     },
     {
@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/sql-kit.git",
       "state" : {
-        "revision" : "dcf10a00d7d5df987b7948e6fd5596fb65f6d0c2",
-        "version" : "3.23.0"
+        "revision" : "b2f128cb62a3abfbb1e3b2893ff3ee69e70f4f0f",
+        "version" : "3.28.0"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-atomics.git",
       "state" : {
-        "revision" : "ff3d2212b6b093db7f177d0855adbc4ef9c5f036",
-        "version" : "1.0.3"
+        "revision" : "6c89474e62719ddcc1e9614989fff2f68208fe10",
+        "version" : "1.1.0"
       }
     },
     {
@@ -158,8 +158,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-crypto.git",
       "state" : {
-        "revision" : "92a04c10fc5ce0504f8396aac7392126033e547c",
-        "version" : "2.2.2"
+        "revision" : "60f13f60c4d093691934dc6cfdf5f508ada1f894",
+        "version" : "2.6.0"
       }
     },
     {
@@ -167,8 +167,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log.git",
       "state" : {
-        "revision" : "6fe203dc33195667ce1759bf0182975e4653ba1c",
-        "version" : "1.4.4"
+        "revision" : "532d8b529501fb73a2455b179e0bbb6d49b652ed",
+        "version" : "1.5.3"
       }
     },
     {
@@ -176,8 +176,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-metrics.git",
       "state" : {
-        "revision" : "9b39d811a83cf18b79d7d5513b06f8b290198b10",
-        "version" : "2.3.3"
+        "revision" : "971ba26378ab69c43737ee7ba967a896cb74c0d1",
+        "version" : "2.4.1"
       }
     },
     {
@@ -185,8 +185,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "7e3b50b38e4e66f31db6cf4a784c6af148bac846",
-        "version" : "2.46.0"
+        "revision" : "cf281631ff10ec6111f2761052aa81896a83a007",
+        "version" : "2.58.0"
       }
     },
     {
@@ -194,8 +194,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-extras.git",
       "state" : {
-        "revision" : "91dd2d61fb772e1311bb5f13b59266b579d77e42",
-        "version" : "1.15.0"
+        "revision" : "0e0d0aab665ff1a0659ce75ac003081f2b1c8997",
+        "version" : "1.19.0"
       }
     },
     {
@@ -203,8 +203,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-http2.git",
       "state" : {
-        "revision" : "d6656967f33ed8b368b38e4b198631fc7c484a40",
-        "version" : "1.23.1"
+        "revision" : "a8ccf13fa62775277a5d56844878c828bbb3be1a",
+        "version" : "1.27.0"
       }
     },
     {
@@ -212,8 +212,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-ssl.git",
       "state" : {
-        "revision" : "4fb7ead803e38949eb1d6fabb849206a72c580f3",
-        "version" : "2.23.0"
+        "revision" : "320bd978cceb8e88c125dcbb774943a92f6286e9",
+        "version" : "2.25.0"
       }
     },
     {
@@ -221,8 +221,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-transport-services.git",
       "state" : {
-        "revision" : "c0d9a144cfaec8d3d596aadde3039286a266c15c",
-        "version" : "1.15.0"
+        "revision" : "e7403c35ca6bb539a7ca353b91cc2d8ec0362d58",
+        "version" : "1.19.0"
       }
     },
     {
@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/vapor.git",
       "state" : {
-        "revision" : "eb2da0d749e185789970c32f7fd9c114a339fa13",
-        "version" : "4.67.5"
+        "revision" : "fe973db5f48f7bb2bcf394b5932afa9884b6e589",
+        "version" : "4.78.2"
       }
     },
     {
@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/websocket-kit.git",
       "state" : {
-        "revision" : "2d9d2188a08eef4a869d368daab21b3c08510991",
-        "version" : "2.6.1"
+        "revision" : "53fe0639a98903858d0196b699720decb42aee7b",
+        "version" : "2.14.0"
       }
     }
   ],

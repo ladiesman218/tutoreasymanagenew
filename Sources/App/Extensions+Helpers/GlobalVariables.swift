@@ -27,7 +27,7 @@ let chapterPrefixRegex = Regex {
 	// Each actual word/character may be surrounded by any number of spaces
 	
 	ZeroOrMore(.whitespace)
-	// Things like "第", digits are also counts as word in regex, so use .reluctant
+	// Things like "第". Digits are also counts as word in regex, so use .reluctant
 	ZeroOrMore(.word, .reluctant)
 	ZeroOrMore(.whitespace)
 	

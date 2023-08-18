@@ -3,23 +3,25 @@ import Fluent
 import FluentPostgresDriver
 
 
-// configures your application
+// configures application
 public func configure(_ app: Application) throws {
-//	app.environment = .development
+//	app.environment = .production
 	
  	app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))	// To serve files from /Public folder
 	
-	// production env should init db instance from enviroment(set in Dockerfile). For convenience, other envs should use the same db instance so we don't need too many db container running for different envs. This db instance should can use the hard coded db parameters.
+	// production env should init db instance from enviroment(set in Dockerfile). For convenience, other envs should use the same db instance so we don't need too many db container running for different envs. This db instance can use the hard coded db parameters.
 	if app.environment == .production {
 		// If enviroment has an vairable called DATABASE_URL, then it's for production, force init a PostgresConfiguration from that variable's value, or crash the app.
 		print("PRODUCTION enviroment")
-		var config = Environment.get("DATABASE_URL").flatMap(URL.init)!.flatMap(PostgresConfiguration.init)!
-		config.tlsConfiguration = .makeClientConfiguration()
-		config.tlsConfiguration?.certificateVerification = .none
+//		var config = Environment.get("DATABASE_URL").flatMap(URL.init)!.flatMap(PostgresConfiguration.init)!
+		let config = SQLPostgresConfiguration(hostname: Environment.get("DATABASE_HOST")!, port: 5432, username: Environment.get("DATABASE_USERNAME")!, password: Environment.get("DATABASE_PASSWORD")!, database: Environment.get("DATABASE_NAME")!, tls: .disable)
+//		config.tlsConfiguration?.certificateVerification = .none
 		app.databases.use(.postgres(configuration: config), as: .psql)
 	} else {
 		// Before start the app, run `docker run --name tutor-local-test -p 5433:5432 -e POSTGRES_PASSWORD=tutor_test -e POSTGRES_USER=tutor_test -e POSTGRES_DB=tutor_test -d postgres:12-alpine` in terminal to start a container for the testing db.
-		let postgres = DatabaseConfigurationFactory.postgres(hostname: "localhost", port: 5433, username: "tutor_test", password: "tutor_test", database: "tutor_test")
+//		let postgres = DatabaseConfigurationFactory.postgres(hostname: "localhost", port: 5433, username: "tutor_test", password: "tutor_test", database: "tutor_test")
+		let config = SQLPostgresConfiguration(hostname: "localhost", port: 5433, username: "tutor_test", password: "tutor_test", database: "tutor_test", tls: .disable)
+		let postgres = DatabaseConfigurationFactory.postgres(configuration: config)
 		app.databases.use(postgres, as: .psql)
 	}
 	
@@ -28,7 +30,7 @@ public func configure(_ app: Application) throws {
 //		config.tlsConfiguration?.certificateVerification = .none
 //		app.databases.use(.postgres(configuration: config), as: .psql)
 //	} else {
-//		let postgres = DatabaseConfigurationFactory.postgres(hostname: Environment.get("DATABASE_HOST") ?? "localhost", port: databasePort, username: Environment.get("DATABASE_USERNAME") ?? "vapor_username", password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password", database: Environment.get("DATABASE_NAME") ?? databaseName)
+//		let postgres = DatabaseConfigurationFactory.postgres(hostname: Environment.get("DATABASE_HOST") ?? "localhost", port: 5432, username: Environment.get("DATABASE_USERNAME") ?? "vapor_username", password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password", database: Environment.get("DATABASE_NAME") ?? "tutoreasymanage")
 //		app.databases.use(postgres, as: .psql)
 //		print(app.databases.configuration(for: .psql).debugDescription)
 //	}
