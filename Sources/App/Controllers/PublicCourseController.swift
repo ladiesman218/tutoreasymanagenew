@@ -3,6 +3,11 @@ import Fluent
 
 struct PublicCourseController: RouteCollection {
 	
+	enum DirectoryType: Int {
+		case stage = 2
+		case chapter = 3
+	}
+	
 	func boot(routes: RoutesBuilder) throws {
 		let courseRoute = routes.grouped("api", "course")
 		
@@ -10,9 +15,9 @@ struct PublicCourseController: RouteCollection {
 		courseRoute.get(":id", use: getCourse)
 		
 		let stageRoute = routes.grouped("api", "stage")
-		stageRoute.get("**", use: getAllChapters)
+		stageRoute.get("**", use: getStage)
 		
-		let chapterRoute = routes.grouped("api", "chapter").grouped(Token.authenticator())
+		let chapterRoute = routes.grouped("api", "chapter")
 		chapterRoute.get("**", use: getChapter)
 	}
 	
@@ -33,7 +38,8 @@ struct PublicCourseController: RouteCollection {
 		return response
 	}
 	
-	// This will return course info with its all stages info
+	// This will return course info with all its stages' urls, currently sorted by their names
+	#warning("Add functionality to sort stages per need")
 	func getCourse(_ req: Request) async throws -> Response {
 		guard let idString = req.parameters.get("id"), let id = Course.IDValue(idString) else {
 			throw GeneralInputError.invalidID
@@ -42,7 +48,6 @@ struct PublicCourseController: RouteCollection {
 		guard let course = try await Course.find(id, on: req.db), let publicInfo = course.publicInfo else {
 			throw CourseError.idNotFound(id: id)
 		}
-		
 		guard FileManager.default.fileExists(atPath: course.directoryURL.path) else {
 			throw CourseError.fileNotFound(name: course.name)
 		}
@@ -59,11 +64,11 @@ struct PublicCourseController: RouteCollection {
 		return response
 	}
 	
-	// This will return stage info with all its chapters
-	func getAllChapters(_ req: Request) async throws -> Response {
+	// This will return stage info with all its chapter's directory urls, sorted by chapterPrefixRegex's int value
+	func getStage(_ req: Request) async throws -> Response {
 		let pathComponents = req.parameters.getCatchall()
 		
-		let stageURL = try await parseStageOrChapter(from: pathComponents, req: req, index: 2)
+		let stageURL = try await parseStageOrChapter(from: pathComponents, req: req, type: .stage)
 		let stage = Stage(directoryURL: stageURL).publicInfo
 		let eTagValue = String(describing: stage).persistantHash.description
 		
@@ -82,11 +87,8 @@ struct PublicCourseController: RouteCollection {
 	func getChapter(_ req: Request) async throws -> Response {
 		let pathComponents = req.parameters.getCatchall()
 		
-		let chapterURL = try await parseStageOrChapter(from: pathComponents, req: req, index: 3)
+		let chapterURL = try await parseStageOrChapter(from: pathComponents, req: req, type: .chapter)
 		let chapter = Chapter(directoryURL: chapterURL)
-		if !chapter.isFree {
-			let url = try await FileController().accessibleURL(req)
-		}
 		
 		let eTagValue = String(describing: chapter).persistantHash.description
 		
@@ -101,9 +103,10 @@ struct PublicCourseController: RouteCollection {
 		return response
 	}
 	
-	func parseStageOrChapter(from pathComponents: [String], req: Request, index: Int) async throws -> URL {
+
+	func parseStageOrChapter(from pathComponents: [String], req: Request, type: DirectoryType) async throws -> URL {
 		// coursesDirectoryName is where we put all course files, currently it's 'courses', following should be the name of the course, next should be the name for each stage's folder, then the name for chapter's folder, nothing else should follow. Make sure the pathComponents contains the right number of items in step 1.
-		guard let coursesDirIndex = pathComponents.firstIndex(of: coursesDirectoryName), pathComponents.count == coursesDirIndex + index + 1 else {
+		guard let coursesDirIndex = pathComponents.firstIndex(of: coursesDirectoryName), pathComponents.count == coursesDirIndex + type.rawValue + 1 else {
 			throw GeneralInputError.invalidURL
 		}
 		

@@ -29,9 +29,9 @@ final class Course: Model, Content {
 		getImageURLInDirectory(url: directoryURL)
 	}
 	
-	var stages: [Stage] {
+	var stageURLs: [URL] {
 		let stageURLs = directoryURL.subFoldersURLs
-		return stageURLs.sorted { $0.path < $1.path }.map { return Stage(directoryURL: $0) }
+		return stageURLs.sorted { $0.lastPathComponent < $1.lastPathComponent }
 	}
 	
 	init() {}
@@ -92,7 +92,7 @@ extension Course {
 		let name: String
 		let description: String
 		let price: Float
-		let stages: [Stage.PublicInfo]
+		let stageURLs: [URL]
 		let imageURL: URL?
 		let annuallyIAPIdentifier: String
 	}
@@ -101,14 +101,14 @@ extension Course {
 	var publicList: PublicInfo? {
 		get {
 			guard published == true else { return nil }
-			return PublicInfo(id: id!, name: name, description: description, /*directoryURL: directoryURL,*/ price: price, stages: [], imageURL: imageURL, annuallyIAPIdentifier: annuallyIAPIdentifier)
+			return PublicInfo(id: id!, name: name, description: description, /*directoryURL: directoryURL,*/ price: price, stageURLs: [], imageURL: imageURL, annuallyIAPIdentifier: annuallyIAPIdentifier)
 		}
 	}
 	
 	var publicInfo: PublicInfo? {
 		get {
 			guard published == true else { return nil }
-			return PublicInfo(id: id!, name: name, description: description, /*directoryURL: directoryURL,*/ price: price, stages: stages.map { $0.publicList }, imageURL: imageURL, annuallyIAPIdentifier: annuallyIAPIdentifier)
+			return PublicInfo(id: id!, name: name, description: description, /*directoryURL: directoryURL,*/ price: price, stageURLs: stageURLs, imageURL: imageURL, annuallyIAPIdentifier: annuallyIAPIdentifier)
 		}
 	}
 }
