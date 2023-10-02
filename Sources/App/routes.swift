@@ -14,4 +14,5 @@ func routes(_ app: Application) throws {
 	
 	try app.register(collection: ProtectedOrderController())
 	try app.register(collection: IAPController())
+	try app.register(collection: AdminOrderController())
 }

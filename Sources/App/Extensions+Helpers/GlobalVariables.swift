@@ -57,3 +57,6 @@ let nameLength = Range(3...40)
 let passwordLength = Range(6...40)
 
 let nonAlphanumerics = CharacterSet.alphanumerics.inverted	// Alphanumerics contains letters in all language, special letters. But doesn't contain tabs, spaces, marks. Alphanumerics could be used in names. Notice here we used the `inverted` function to get the inverted result, to check if illegal characters are presented.
+
+let noCache = HTTPHeaders.CacheControl(noCache: true)
+let noStore = HTTPHeaders.CacheControl(noStore: true)

@@ -87,7 +87,7 @@ extension Course {
 		
 	}
 	
-	struct PublicInfo: Content {
+	struct PublicInfo: Content, CustomStringConvertible {
 		let id: Course.IDValue
 		let name: String
 		let description: String

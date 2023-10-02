@@ -66,3 +66,9 @@ struct Chapter: Content {
 		self.imageURL = getImageURLInDirectory(url: directoryURL)
 	}
 }
+
+extension Chapter: CustomStringConvertible {
+	var description: String {
+		return "directoryURL: \(directoryURL)), name: \(name), isFree: \(isFree), pdfURL: \(pdfURL), bInstructionURL: \(String(describing: bInstructionURL)), teachingPlanURL: \(String(describing: teachingPlanURL)), sstURL: \(String(describing: sstURL)), codeFile: \(String(describing: codeFile)), imageURL: \(String(describing: imageURL))"
+	}
+}

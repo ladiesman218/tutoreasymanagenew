@@ -115,3 +115,9 @@ extension User {
 		.init(id: id!, email: self.email, username: self.username, firstName: self.firstName, lastName: self.lastName, registerTime: self.registerTime, lastLoginTime: self.lastLoginTime, profilePic: self.profilePic)
 	}
 }
+
+extension User: Equatable {
+	static func == (lhs: User, rhs: User) -> Bool {
+		return lhs.id == rhs.id
+	}
+}

@@ -18,9 +18,7 @@ struct CreateCourse: AsyncMigration {
 			.create()
 		
 		// Add constraint, if published is true, iapIdentifier couldn't be empty. In raw SQL this should be:
-		// ALTER TABLE courses ADD CONSTRAINT published_iap CHECK (NOT (published = TRUE AND annually_iap_identifier = ''));
-		
-		let raw = SQLRaw("NOT (published = TRUE AND annually_iap_identifier = '')")
+		let raw = SQLRaw("NOT (\(Course.FieldKeys.published) = TRUE AND \(Course.FieldKeys.annuallyIAPIdentifier) = '')")
 		let tableConstraint = SQLTableConstraintAlgorithm.check(raw)
 		let publishedNotEmpty = DatabaseSchema.Constraint.sql(tableConstraint)
 		try await database.schema(Course.schema).constraint(publishedNotEmpty).update()

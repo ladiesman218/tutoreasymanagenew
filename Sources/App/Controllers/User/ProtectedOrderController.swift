@@ -12,171 +12,49 @@ struct ProtectedOrderController: RouteCollection {
 	func boot(routes: RoutesBuilder) throws {
 		let protectedRoute = routes.grouped("api", "order").grouped(Token.authenticator(), User.guardMiddleware())
 		
-		protectedRoute.get("create", use: createOrder)
-		protectedRoute.get(":id", use: getOrder)
+		protectedRoute.post("create", use: createOrder)
 		protectedRoute.get(use: getAllOrders)
+		protectedRoute.get(":\(OrderController.idParaName)", use: getOrder)
 		protectedRoute.get("valid", use: getAllValidOrders)
-		protectedRoute.post("delete", ":id", use: deleteOrder)
+		protectedRoute.post("cancel", ":\(OrderController.idParaName)", use: cancelOrder)
+		protectedRoute.post("delete", ":\(OrderController.idParaName)", use: deleteOrder)
+	}
+	
+	func createOrder(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(User.self)
+		return try await OrderController.createOrder(req, user: user)
 	}
 	
 	func getAllOrders(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(User.self)
-		let orders = try await user.$orders.get(on: req.db)
-		let eTagValue = String(describing: orders).persistantHash.description
-		
-		// Check if orders has been cached already and return NotModified response if the etags match
-		if eTagValue == req.headers.first(name: .ifNoneMatch) {
-			print("Not changed for all orders")
-			return Response(status: .notModified)
-		}
-		
-		var headers = HTTPHeaders()
-		headers.replaceOrAdd(name: .eTag, value: eTagValue)
-		headers.replaceOrAdd(name: .cacheControl, value: "no-cache")
-		let response = try await orders.encodeResponse(status: .ok, headers: headers, for: req)
-		
-		return response
-	}
-	
-#warning("this and the following are duplicates")
-	func getAllValidOrders(_ req: Request) async throws -> Response {
-		let allOrders = try await getAllOrders(req).content.decode([Order].self)
-		// First, filter out orders that have expirationTime, since expirationTime is optional
-		let subscriptionOrders = allOrders.filter {
-			$0.expirationTime != nil
-		}
-		let validOrders = subscriptionOrders.filter {
-			$0.status == .completed && $0.expirationTime! > Date.now
-		}
-		
-		
-		let eTagValue = String(describing: validOrders).persistantHash.description
-		
-		// Check if orders has been cached already and return NotModified response if the etags match
-		if eTagValue == req.headers.first(name: .ifNoneMatch) {
-			print("Not changed for all valid orders")
-			return Response(status: .notModified)
-		}
-		
-		var headers = HTTPHeaders()
-		headers.replaceOrAdd(name: .eTag, value: eTagValue)
-		headers.replaceOrAdd(name: .cacheControl, value: "no-cache")
-		let response = try await validOrders.encodeResponse(status: .ok, headers: headers, for: req)
-		return response
-	}
-	
-	// This is only called from IAPController
-	#warning("How should this be cached?")
-	func getAllValidOrdersForUser(_ req: Request, userID: User.IDValue) async throws -> Response {
-		let allOrders = try await getAllOrders(req).content.decode([Order].self)
-		// First, filter out orders that have expirationTime, since expirationTime is optional
-		let subscriptionOrders = allOrders.filter {
-			$0.expirationTime != nil
-		}
-		let validOrders = subscriptionOrders.filter {
-			$0.status == .completed && $0.expirationTime! > Date.now
-		}
-		
-		
-		var headers = HTTPHeaders()
-		
-		return try await validOrders.encodeResponse(status: .ok, headers: headers, for: req)
+		let orders = try await OrderController.getAllOrders(req, for: user)
+		return try await req.response(of: orders, cacheControl: noCache)
 	}
 	
 	func getOrder(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(User.self)
-		guard let idString = req.parameters.get("id"), let id = Order.IDValue(idString) else {
-			throw GeneralInputError.invalidID
-		}
-		
+		let order = try await OrderController.getOrder(req)
 		// Make sure the given orderID belongs to the user
-		let orders = try await user.$orders.get(on: req.db)
-		guard let order = orders.filter({ $0.id! == id }).first else {
-			throw OrderError.idNotFound(id: id)
-		}
+		guard order.$user.id == user.id else { throw OrderError.invalidInput }
 		
-		let eTagValue = String(describing: order).persistantHash.description
-		
-		// Check if order has been cached already and return NotModified response if the etags match
-		if eTagValue == req.headers.first(name: .ifNoneMatch) {
-			print("Not changed for all order: \(order.id!)")
-			return Response(status: .notModified)
-		}
-		
-		var headers = HTTPHeaders()
-		headers.replaceOrAdd(name: .eTag, value: eTagValue)
-		headers.replaceOrAdd(name: .cacheControl, value: "no-cache")
-		let response = try await orders.encodeResponse(status: .ok, headers: headers, for: req)
-		return response
+		return try await req.response(of: order, cacheControl: noCache)
 	}
 	
-	func createOrder(_ req: Request) async throws -> HTTPStatus {
-		let userID = try req.auth.require(User.self).requireID()
-		let courseIDs = try req.content.decode(Order.Input.self).courseIDs.uniqued()
+	func getAllValidOrders(_ req: Request) async throws -> Response {
+		let user = try req.auth.require(User.self)
+		let allOrders = try await OrderController.getAllOrders(req, for: user)
+		let validOrders = OrderController.filterAllValidOrders(orders: allOrders)
 		
-		let courses = try await withThrowingTaskGroup(of: Course.self, body: { group in
-			var courses = [Course]()
-			for id in courseIDs {
-				group.addTask {
-					guard let course = try await Course.find(id, on: req.db) else {
-						throw CourseError.idNotFound(id: id)
-					}
-					return course
-				}
-				
-			}
-			for try await course in group { courses.append(course) }
-			return courses
-		})
-		let caches = courses.map { try! CourseCache(from: $0) }
-		let order = Order(courseCaches: caches, userID: userID, paymentAmount: 123, transactionID: "asdf")
-		try await order.save(on: req.db)
-		return .created
+		return try await req.response(of: validOrders, cacheControl: noCache)
 	}
-	// completeOrder should NOT be directly exposed via API endpoint, otherwise a user can access that endpoint and change the order status to completed. Instead, this should be called inside the payment's handler's callback function
-	func completeOrder(_ req: Request) async throws -> HTTPStatus {
-		let order = try await getOrder(req).content.decode(Order.self)
-		guard order.status == .unPaid else {
-			throw OrderError.invalidStatus
-		}
-		order.status = .completed
-		order.completeTime = Date.now
-		try await order.update(on: req.db)
-		return .ok
-	}
-	
-#warning("How should this be called? User shouldn't call this with its own authentication")
-	func refundOrder(_ req: Request) async throws -> HTTPStatus {
-		let order = try await getOrder(req).content.decode(Order.self)
-		guard order.status == .completed else {
-			throw OrderError.invalidStatus
-		}
-		
-		order.status = .refunded
-		order.refundTime = Date.now
-		try await order.update(on: req.db)
-		return .ok
-	}
-	
+
 	func cancelOrder(_ req: Request) async throws -> HTTPStatus {
-		let order = try await getOrder(req).content.decode(Order.self)
-		guard order.status == .unPaid else {
-			throw OrderError.invalidStatus
-		}
-		
-		order.status = .canceled
-		order.cancelTime = Date.now
-		try await order.update(on: req.db)
-		return .ok
+		let user = try req.auth.require(User.self)
+		return try await OrderController.cancelOrder(req, for: user)
 	}
 	
 	func deleteOrder(_ req: Request) async throws -> HTTPStatus {
-		let order = try await getOrder(req).content.decode(Order.self)
-		guard order.status == .unPaid || order.status == .canceled else {
-			throw OrderError.invalidStatus
-		}
-		
-		try await order.delete(on: req.db)
-		return .ok
+		let user = try req.auth.require(User.self)
+		return try await OrderController.deleteOrder(req, for: user)
 	}
 }

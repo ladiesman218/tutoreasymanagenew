@@ -47,7 +47,6 @@ struct AdminController: RouteCollection {
 		
 		// Invalidate all sessions for the given admin acount first
 		try await foundAdmin.unauthenticateAllSessions(id: foundAdmin.id!, req: req, sessionDataKey: "_AdminUserSession")
-//		let _ = foundAdmin.unauthenticateAllSessions(id: foundAdmin.id!, req: req, sessionDataKey: "_AdminUserSession")
 		req.auth.login(foundAdmin)
 		req.session.authenticate(foundAdmin)
 		foundAdmin.lastLoginTime = Date.now

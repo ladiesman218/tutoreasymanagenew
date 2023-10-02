@@ -9,7 +9,7 @@ final class Order: Model, Content {
 		// Canceled means user didn't make a successful payment within a limited time, or voluntarily clicked cancel button before making a payment.
 		// Completed means user has made a payment
 		
-		case unPaid = "UnPaid", completed = "Completed", canceled = "Canceled", refunded = "Refunded"
+		case unPaid = "UnPaid", completed = "Completed", cancelled = "Cancelled", refunded = "Refunded"
 	}
 
 	static var schema = "orders"
@@ -23,6 +23,7 @@ final class Order: Model, Content {
 		static let originalTransactionID = FieldKey(stringLiteral: "original_transaction_id")
 		static let transactionID = FieldKey(stringLiteral: "transaction_id")
 		static let iapIdentifier = FieldKey(stringLiteral: "iap_identifier")
+		static let refundAmount = FieldKey(stringLiteral: "refund_amount")
 
 		static let generateTime = FieldKey(stringLiteral: "generate_time")
 		static let completeTime = FieldKey(stringLiteral: "complete_time")
@@ -38,6 +39,7 @@ final class Order: Model, Content {
 	@Field(key: FieldKeys.paymentAmount) var paymentAmount: Float
 	@OptionalField(key: FieldKeys.originalTransactionID) var originalTransactionID: String?
 	@Field(key: FieldKeys.transactionID) var transactionID: String
+	@OptionalField(key: FieldKeys.refundAmount) var refundAmount: Float?
 	// Only used for apple platforms, so it's optional
 	@OptionalField(key: FieldKeys.iapIdentifier) var iapIdentifier: String?
 	
@@ -49,7 +51,7 @@ final class Order: Model, Content {
 	
 	init() {}
 	
-	init(id: IDValue? = nil, status: Status = .unPaid, courseCaches: [CourseCache], userID: User.IDValue, paymentAmount: Float, originalTransactionID: String? = nil, transactionID: String, iapIdentifier: String? = nil, generateTime: Date = Date(), completeTime: Date? = nil, cancelTime: Date? = nil, refundTime: Date? = nil, expirationTime: Date? = nil) {
+	init(id: IDValue? = nil, status: Status = .unPaid, courseCaches: [CourseCache], userID: User.IDValue, paymentAmount: Float, originalTransactionID: String? = nil, transactionID: String, refundAmount: Float? = nil, iapIdentifier: String? = nil, generateTime: Date = Date(), completeTime: Date? = nil, cancelTime: Date? = nil, refundTime: Date? = nil, expirationTime: Date? = nil) {
 		self.id = id
 		self.status = status
 		self.items = courseCaches
@@ -57,6 +59,7 @@ final class Order: Model, Content {
 		self.paymentAmount = paymentAmount
 		self.originalTransactionID = originalTransactionID
 		self.transactionID = transactionID
+		self.refundAmount = refundAmount
 		self.iapIdentifier = iapIdentifier
 		self.generateTime = generateTime
 		self.completeTime = completeTime
@@ -66,15 +69,9 @@ final class Order: Model, Content {
 	}
 }
 
-extension Order {
-	struct Input: Decodable {
-		let courseIDs: [Course.IDValue]
-	}
-}
-
 // String(descrbing: order) generates lots of nonsense, clean it.
 extension Order: CustomStringConvertible {
 	var description: String {
-		return "id: \(String(describing: id)), status: \(status.rawValue), items: \(items), userID: \($user.id), paymentAmount: \(paymentAmount), originalTransactionID: \(String(describing: originalTransactionID)), transactionID: \(transactionID), iapIdentifier: \(String(describing: iapIdentifier)), generateTime: \(String(describing: generateTime)), completeTime: \(String(describing: completeTime)), cancelTime: \(String(describing: cancelTime)), refundTime: \(String(describing: refundTime)), expirationTime: \(String(describing: expirationTime))"
+		return "id: \(String(describing: id)), status: \(status.rawValue), items: \(items), userID: \($user.id), paymentAmount: \(paymentAmount), originalTransactionID: \(String(describing: originalTransactionID)), transactionID: \(transactionID), refundAmount: \(String(describing: refundAmount)), iapIdentifier: \(String(describing: iapIdentifier)), generateTime: \(String(describing: generateTime)), completeTime: \(String(describing: completeTime)), cancelTime: \(String(describing: cancelTime)), refundTime: \(String(describing: refundTime)), expirationTime: \(String(describing: expirationTime))"
 	}
 }

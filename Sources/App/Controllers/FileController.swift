@@ -78,12 +78,11 @@ struct FileController: RouteCollection {
 			throw CourseError.fileNotFound(name: "课程")
 		}
 		let response = req.fileio.streamFile(at: url.path)
-		
-		// no-cache means caches must check with the origin server for [validation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#Cache_validation) before using the cached copy.
-		response.headers.replaceOrAdd(name: .cacheControl, value: "no-cache")
+        
+        response.headers.cacheControl = noCache
 		
 		if response.headers.contentType?.type == "video" {
-			response.headers.replaceOrAdd(name: .cacheControl, value: "no-store")
+            response.headers.cacheControl = noStore
 		}
 		return response
 	}

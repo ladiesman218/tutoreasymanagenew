@@ -40,7 +40,7 @@ struct Stage: Codable {
 	}
 	
 	// Without this, querying a stage will never get back its chapterURLs, since chapterURLs are defined as a caclulated property.
-	struct PublicInfo: Content {
+	struct PublicInfo: Content, CustomStringConvertible {
 		let directoryURL: URL
 		let name: String
 		let imageURL: URL?

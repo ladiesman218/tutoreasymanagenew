@@ -1,39 +1,20 @@
 import Vapor
 import Fluent
 import FluentPostgresDriver
-
+import SendGrid
+import QueuesFluentDriver
 
 // configures application
 public func configure(_ app: Application) throws {
-//	app.environment = .production
-	
- 	app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))	// To serve files from /Public folder
-	
-	// production env should init db instance from enviroment(set in Dockerfile). For convenience, other envs should use the same db instance so we don't need too many db container running for different envs. This db instance can use the hard coded db parameters.
+	// production env should init db instance from enviroment(set in Dockerfile or .env file). For convenience, other envs should use the same db instance so we don't need too many db container running for different envs. This db instance can use the hard coded db parameters.
 	if app.environment == .production {
-		// If enviroment has an vairable called DATABASE_URL, then it's for production, force init a PostgresConfiguration from that variable's value, or crash the app.
-		print("PRODUCTION enviroment")
-//		var config = Environment.get("DATABASE_URL").flatMap(URL.init)!.flatMap(PostgresConfiguration.init)!
 		let config = SQLPostgresConfiguration(hostname: Environment.get("DATABASE_HOST")!, port: 5432, username: Environment.get("DATABASE_USERNAME")!, password: Environment.get("DATABASE_PASSWORD")!, database: Environment.get("DATABASE_NAME")!, tls: .disable)
-//		config.tlsConfiguration?.certificateVerification = .none
 		app.databases.use(.postgres(configuration: config), as: .psql)
 	} else {
-		// Before start the app, run `docker run --name tutor-local-test -p 5433:5432 -e POSTGRES_PASSWORD=tutor_test -e POSTGRES_USER=tutor_test -e POSTGRES_DB=tutor_test -d postgres:12-alpine` in terminal to start a container for the testing db.
-//		let postgres = DatabaseConfigurationFactory.postgres(hostname: "localhost", port: 5433, username: "tutor_test", password: "tutor_test", database: "tutor_test")
 		let config = SQLPostgresConfiguration(hostname: "localhost", port: 5433, username: "tutor_test", password: "tutor_test", database: "tutor_test", tls: .disable)
 		let postgres = DatabaseConfigurationFactory.postgres(configuration: config)
 		app.databases.use(postgres, as: .psql)
 	}
-	
-//	if var config = Environment.get("DATABASE_URL").flatMap(URL.init).flatMap(PostgresConfiguration.init) {
-//		config.tlsConfiguration = .makeClientConfiguration()
-//		config.tlsConfiguration?.certificateVerification = .none
-//		app.databases.use(.postgres(configuration: config), as: .psql)
-//	} else {
-//		let postgres = DatabaseConfigurationFactory.postgres(hostname: Environment.get("DATABASE_HOST") ?? "localhost", port: 5432, username: Environment.get("DATABASE_USERNAME") ?? "vapor_username", password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password", database: Environment.get("DATABASE_NAME") ?? "tutoreasymanage")
-//		app.databases.use(postgres, as: .psql)
-//		print(app.databases.configuration(for: .psql).debugDescription)
-//	}
 	
 	app.migrations.add(CreateAdmin())
 	app.migrations.add(CreateOwner())
@@ -44,16 +25,30 @@ public func configure(_ app: Application) throws {
         app.migrations.add(ImportTestingData())
     }
 	app.migrations.add(CreateOrder())
-	
-	// Config session, .sessions.use(.fluent) has to be called before .middleware.use() otherwise won't work...
 	// Currently, session is used for Admin. Normal users will use tokens only.
 	app.migrations.add(SessionRecord.migration)
+	// The QueuesFluentDriver package needs a table, named _jobs_meta by default, to store the Vapor Queues jobs. Make sure to add this to your migrations by calling `app.migrations.add(JobMetadataMigrate()), or change the name by pass in the schema parameter and give it a customized name.
+	app.migrations.add(JobMetadataMigrate(schema: "_automated_jobs"))
+	// Config session, .sessions.use(.fluent) has to be called before .middleware.use() otherwise won't work
+	// This will automatically run migrations everytime the app is restarted.
+	try app.autoMigrate().wait()
+	
 	app.sessions.use(.fluent)
 	app.middleware.use(app.sessions.middleware)
+	app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))	// To serve files from /Public folder
 	
-	// This will automatically run migrations everytime the app is restarted. Notice this has to be called after session migration.
-	try app.autoMigrate().wait()
+	// By default, the Vapor Queues package creates 2 workers per CPU core, and each worker would poll the database for jobs to be run every second. On a 4 cores system, this means 8 workers querying the database every second by default. We can change the jobs polling interval by setting refreshInterval. Say if we set it to 1 minute and the server app is started at mm:30, it will check for pending jobs in database at every minute's 30 seconds, so if a job is scheduled to be runned at 1:23:45AM, its actual pulling time will be 1:24:30AM.
+	app.queues.configuration.refreshInterval = .minutes(1)
+	app.queues.use(.fluent())
+	app.queues.add(EmailJob())
+	app.queues.add(OrderJobs())
+	
+	// Currently this Cleanup has no actual effect coz we need another running worker, check out documentation at https://docs.vapor.codes/advanced/queues/#scheduling-jobs
+	app.queues.schedule(Cleanup()).monthly().on(27).at(13, 27)
+	try app.queues.startInProcessJobs(on: .default)
 	
     // register routes
     try routes(app)
+	
+//	app.sendgrid.initialize()
 }
