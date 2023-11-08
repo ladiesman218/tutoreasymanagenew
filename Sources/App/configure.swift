@@ -1,21 +1,25 @@
 import Vapor
 import Fluent
 import FluentPostgresDriver
-import SendGrid
 import QueuesFluentDriver
 
 // configures application
 public func configure(_ app: Application) throws {
-	// production env should init db instance from enviroment(set in Dockerfile or .env file). For convenience, other envs should use the same db instance so we don't need too many db container running for different envs. This db instance can use the hard coded db parameters.
-	if app.environment == .production {
-		let config = SQLPostgresConfiguration(hostname: Environment.get("DATABASE_HOST")!, port: 5432, username: Environment.get("DATABASE_USERNAME")!, password: Environment.get("DATABASE_PASSWORD")!, database: Environment.get("DATABASE_NAME")!, tls: .disable)
-		app.databases.use(.postgres(configuration: config), as: .psql)
-	} else {
-		let config = SQLPostgresConfiguration(hostname: "localhost", port: 5433, username: "tutor_test", password: "tutor_test", database: "tutor_test", tls: .disable)
-		let postgres = DatabaseConfigurationFactory.postgres(configuration: config)
-		app.databases.use(postgres, as: .psql)
-	}
-	
+	// When deploying with docker compose, app service depends on database service, it's done by setting app's environment variable DATABASE_HOST to database service's name. So here we need to get database host from environment variable. For local testing, DATABASE_HOST won't be existed so "localhost" will be used.
+    let dbHost = Environment.get("DATABASE_HOST") ?? "localhost"
+    let dbName = Environment.get("DATABASE_NAME")!
+    let dbPort = Int(Environment.get("DATABASE_PORT")!)!
+    let dbUser = Environment.get("DATABASE_USERNAME")!
+    let dbPass = Environment.get("DATABASE_PASSWORD")!
+    let brevoAPI = Environment.get("BREVOAPI")!
+    
+    // Database will be on the same server as app itself, so postgres should disable tls.
+    // Server's tls is handled by nginx, so in project's conf we can disable tls
+    let config = SQLPostgresConfiguration(hostname: dbHost, port: dbPort, username: dbUser, password: dbPass, database: dbName, tls: .disable)
+    let postgres = DatabaseConfigurationFactory.postgres(configuration: config)
+    app.databases.use(postgres, as: .psql)
+    print(app.environment)
+
 	app.migrations.add(CreateAdmin())
 	app.migrations.add(CreateOwner())
 	app.migrations.add(CreateCourse())
@@ -49,6 +53,4 @@ public func configure(_ app: Application) throws {
 	
     // register routes
     try routes(app)
-	
-//	app.sendgrid.initialize()
 }

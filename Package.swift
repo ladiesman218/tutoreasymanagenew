@@ -13,7 +13,6 @@ let package = Package(
 		.package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
 		.package(url: "https://github.com/vapor/jwt.git", from: "4.2.0"),
 		.package(url: "https://github.com/vapor/jwt-kit.git", branch: "jws-spike"),
-		.package(url: "https://github.com/vapor-community/sendgrid.git", from: "4.0.0"),
 		.package(url: "https://github.com/m-barthelemy/vapor-queues-fluent-driver.git", from: "3.0.0-beta1"),
 	],
 	targets: [
@@ -24,7 +23,6 @@ let package = Package(
 				.product(name: "Fluent", package: "fluent"),
 				.product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
 				.product(name: "JWT", package: "jwt"),
-				.product(name: "SendGrid", package: "sendgrid"),
 				.product(name: "QueuesFluentDriver", package: "vapor-queues-fluent-driver"),
 			],
 			swiftSettings: [

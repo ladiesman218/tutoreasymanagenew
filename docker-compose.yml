@@ -14,14 +14,6 @@
 version: '3.7'
 volumes:
   db_data:
-#3
-x-shared_environment: &shared_environment
-  LOG_LEVEL: ${LOG_LEVEL:-debug}
-  DATABASE_HOST: db
-  DATABASE_NAME: tutoreasymanage
-  DATABASE_USERNAME: tutor_easy
-  DATABASE_PASSWORD: Gaolei123!
-  LC_ALL: zh_CN.UTF-8
 services:
   app:
 #6
@@ -34,7 +26,14 @@ services:
     build:
       context: . 
     environment:
-      <<: *shared_environment
+      # Database host should be set to service db
+      DATABASE_HOST: db
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      BREVOAPI: ${BREVOAPI}
+      LC_ALL: zh_CN.UTF-8
     depends_on:
       - db 
     ports:
@@ -47,12 +46,14 @@ services:
 # 14
     volumes:
       - db_data:/tutoreasymanagenew/psql_db
+    ports:
+      - "${DATABASE_PORT}:${DATABASE_PORT}"
 # 15
     environment:
       # PGDATA will be the path where db files reside in the db container, this should be set to the same value as in volume's db_data. Since we set it as an volume, db container will create a volume when first start up, check `docker volume ls` can see that, volume's name should be <service_name>_<volume_name>, which in our case is tutoreasymanage_db_data. Outside the container itself, where does the db file actually lives in the host???
       PGDATA: /tutoreasymanagenew/psql_db
-      POSTGRES_USER: tutor_easy
-      POSTGRES_PASSWORD: Gaolei123!
-      POSTGRES_DB: tutoreasymanage
-    ports:
-      - '5432:5432'
+      POSTGRES_DB: ${DATABASE_NAME}
+      PGPORT: ${DATABASE_PORT}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      
