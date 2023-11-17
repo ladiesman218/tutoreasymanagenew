@@ -60,3 +60,6 @@ let nonAlphanumerics = CharacterSet.alphanumerics.inverted	// Alphanumerics cont
 
 let noCache = HTTPHeaders.CacheControl(noCache: true)
 let noStore = HTTPHeaders.CacheControl(noStore: true)
+
+let pdfExt = "pdf"
+let videoExts = ["mp4", "mov", "m4v"]

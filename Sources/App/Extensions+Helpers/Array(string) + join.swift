@@ -22,11 +22,8 @@ extension Array where Element == String {
 		// Make sure the url is generated from root directory instead of current working directory
 		var url = URL(fileURLWithPath: "/")
 		
-		guard self.count > 1 else { return url }
+        self.forEach { url = url.appendingPathComponent($0) }
 		
-		for index in 0 ... self.count - 1 {
-			url = url.appendingPathComponent(self[index])
-		}
 		return url.standardizedFileURL
 	}
 }
