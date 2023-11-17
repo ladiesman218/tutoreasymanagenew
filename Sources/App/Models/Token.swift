@@ -24,7 +24,12 @@ final class Token: Model, Content {
 
 extension Token {
 	static func generate(for userID: User.IDValue) -> Token {
-		let random = [UInt8].random(count: 16).base64
+		// Before it was `let random = [UInt8].random(count: 16).base64`, but this genrates string contains slash("/"). Sometimes we need to pass token value in url parameter, slashes cause problems so replaced the old implementation to current one, which guaranteed slashes won't be included.
+		var random = [UInt8].random(count: 16).base64
+		random = random.replacingOccurrences(of: "/", with: "_")
+			.replacingOccurrences(of: "+", with: "-")
+			.replacingOccurrences(of: "=", with: "")
+		
 		return Token(value: random, userID: userID)
 	}
 	
