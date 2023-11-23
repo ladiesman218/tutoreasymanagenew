@@ -11,7 +11,7 @@ import Fluent
 
 struct OrderExecution: Codable {
 	
-	enum Execution: String, Codable {
+	enum Execution: Codable {
 		case cancel, delete
 	}
 	
@@ -40,13 +40,14 @@ struct OrderJobs: AsyncJob {
 	}
 	
 	func error(_ context: QueueContext, _ error: Error, _ payload: Payload) async throws {
-		print("execut order job failed")
+		print("execute order job failed")
 		print(error.localizedDescription)
 		// If you don't want to handle errors you can simply return. You can also omit this function entirely.
 	}
 }
 
-struct Cleanup: AsyncScheduledJob {
+// After a order has been cancelled more than 1 month, delete it from db
+struct PurgeOrder: AsyncScheduledJob {
 	func run(context: Queues.QueueContext) async throws {
 		let database = context.queue.context.application.db
 		let cancelledOrders = try await Order.query(on: database).filter(\.$status == .cancelled).all()

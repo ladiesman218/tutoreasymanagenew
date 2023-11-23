@@ -11,7 +11,7 @@ public func configure(_ app: Application) throws {
     let dbPort = Int(Environment.get("DATABASE_PORT")!)!
     let dbUser = Environment.get("DATABASE_USERNAME")!
     let dbPass = Environment.get("DATABASE_PASSWORD")!
-    let brevoAPI = Environment.get("BREVOAPI")!
+    let _ = Environment.get("BREVOAPI")!
     
     // Database will be on the same server as app itself, so postgres should disable tls.
     // Server's tls is handled by nginx, so in project's conf we can disable tls
@@ -44,11 +44,11 @@ public func configure(_ app: Application) throws {
 	// By default, the Vapor Queues package creates 2 workers per CPU core, and each worker would poll the database for jobs to be run every second. On a 4 cores system, this means 8 workers querying the database every second by default. We can change the jobs polling interval by setting refreshInterval. Say if we set it to 1 minute and the server app is started at mm:30, it will check for pending jobs in database at every minute's 30 seconds, so if a job is scheduled to be runned at 1:23:45AM, its actual pulling time will be 1:24:30AM.
 	app.queues.configuration.refreshInterval = .minutes(1)
 	app.queues.use(.fluent())
-	app.queues.add(EmailJob())
 	app.queues.add(OrderJobs())
+//	app.queues.add(UserJobs())
 	
 	// Currently this Cleanup has no actual effect coz we need another running worker, check out documentation at https://docs.vapor.codes/advanced/queues/#scheduling-jobs
-	app.queues.schedule(Cleanup()).monthly().on(27).at(13, 27)
+	app.queues.schedule(PurgeOrder()).monthly().on(22).at(23, 24)
 	try app.queues.startInProcessJobs(on: .default)
 	
     // register routes
