@@ -18,6 +18,8 @@ struct OrderController {
 		// Use map coz unique sequence doesn't have a .isEmpty property
 		let courseIDs = try req.content.decode([Order.IDValue].self).uniqued().map { $0 }
 		guard !courseIDs.isEmpty else { throw GeneralInputError.invalidID }
+		// Only verified user can create new order
+		guard user.verified else { throw AuthenticationError.emailIsNotVerified }
 		let userID = try user.requireID()
 
 		let courses = try await withThrowingTaskGroup(of: Course.self, body: { group in
@@ -37,7 +39,7 @@ struct OrderController {
 		let caches = courses.map { try! CourseCache(from: $0) }
 		let order = Order(courseCaches: caches, userID: userID, paymentAmount: 0, transactionID: "asdf")
 		try await order.save(on: req.db)
-		try? await queueCancelOrder(req, orderID: order.requireID())
+		try await queueCancelOrder(req, orderID: order.requireID())
 		return .created
 	}
 	

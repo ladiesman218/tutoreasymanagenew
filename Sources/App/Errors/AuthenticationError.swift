@@ -6,6 +6,8 @@ enum AuthenticationError: Error {
 	case adminNotApproved
 	case userNotFound
 	case tokenValueError
+	case invalidVerificationCode
+	case frequentCodeRequest
 }
 
 extension AuthenticationError: AbortError, DebuggableError {
@@ -21,6 +23,10 @@ extension AuthenticationError: AbortError, DebuggableError {
 			return .notFound
 		case .tokenValueError:
 			return .badRequest
+		case .invalidVerificationCode:
+			return .unauthorized
+		case .frequentCodeRequest:
+			return .tooManyRequests
 		}
 	}
 	
@@ -36,6 +42,10 @@ extension AuthenticationError: AbortError, DebuggableError {
 			return "未找到用户"
 		case .tokenValueError:
 			return "令牌错误"
+		case .invalidVerificationCode:
+			return "验证码无效"
+		case .frequentCodeRequest:
+			return "频繁验证码请求，请稍后再试"
 		}
 	}
 	
@@ -51,9 +61,11 @@ extension AuthenticationError: AbortError, DebuggableError {
 			return "user_not_found"
 		case .tokenValueError:
 			return "token_value_error"
+		case .invalidVerificationCode:
+			return "invalid_verification_code"
+		case .frequentCodeRequest:
+			return "frequent_verification_code_ request"
 		}
 	}
-	
-	
 }
 

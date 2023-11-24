@@ -10,6 +10,18 @@ final class User: Model, Content {
 	
 	static let schema = "users"
 	
+	// Value is the actual verification code, genTime is used to store timestamp when the code is generated, we use the combination of these 2 to compare if 2 codes are identical.
+	struct VerificationCode: Codable, Equatable {
+		let value: String
+		let genTime: Date
+		init() {
+			var string = ""
+			for _ in 1 ... 6 { string += String(Int.random(in: 1...9)) }
+			self.value = string
+			self.genTime = Date.now
+		}
+	}
+	
 	struct FieldKeys {
 		static let email: FieldKey = .string("email")
 		static let username: FieldKey = .string("username")
@@ -19,6 +31,8 @@ final class User: Model, Content {
 		static let registerTime: FieldKey = .string("register_time")
 		static let lastLoginTime: FieldKey = .string("last_login_time")
         static let profilePic: FieldKey = .string("profile_pic")
+		static let verificationCode: FieldKey = .string("verification_code")
+		static let verified: FieldKey = .string("verified")
 	}
 	
 	@ID var id: UUID?
@@ -31,17 +45,21 @@ final class User: Model, Content {
 	@Timestamp(key: FieldKeys.lastLoginTime, on: .none) var lastLoginTime: Date?
     @OptionalField(key: FieldKeys.profilePic) var profilePic: String?
 	@Children(for: \Order.$user) var orders: [Order]
+	@OptionalField(key: FieldKeys.verificationCode) var verificationCode: VerificationCode?
+	@Field(key: FieldKeys.verified) var verified: Bool
 	
 	init() {}
 	
-    init(id: User.IDValue? = nil, email: String, username: String, firstName: String?, lastName: String?, password: String, profilePic: String?) {
-		self.id = id
+    init(email: String, username: String, firstName: String?, lastName: String?, password: String, profilePic: String?) {
+		// 2 values are fixed when creating a new instance, id is always nil and verified is false.
+		self.id = nil
 		self.email = email
 		self.username = username
 		self.firstName = firstName
 		self.lastName = lastName
 		self.password = password
         self.profilePic = profilePic
+		self.verified = false
 	}
 }
 

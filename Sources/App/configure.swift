@@ -45,7 +45,7 @@ public func configure(_ app: Application) throws {
 	app.queues.configuration.refreshInterval = .minutes(1)
 	app.queues.use(.fluent())
 	app.queues.add(OrderJobs())
-//	app.queues.add(UserJobs())
+	app.queues.add(UserJobs())
 	
 	// Currently this Cleanup has no actual effect coz we need another running worker, check out documentation at https://docs.vapor.codes/advanced/queues/#scheduling-jobs
 	app.queues.schedule(PurgeOrder()).monthly().on(22).at(23, 24)
