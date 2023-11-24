@@ -136,6 +136,7 @@ extension Email {
 	
 	static func alertAdmin(error: Error, client: Client) {
 		let message: Body
+		// Emailing admin about crucial server side error, generating this error message is vital: it uses `try!` so if anything goes wrong, server app crash.
 		if let error = error as? DebuggableError {
 			message = try! .generate(placeHolders: [error.reason], template: Body.sysErrorTemplate, client: client)
 		} else {
