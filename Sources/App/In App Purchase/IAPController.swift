@@ -23,8 +23,9 @@ struct IAPController: RouteCollection {
 	func getProductIdentifiers(_ req: Request) async throws -> [String] {
 		let courses = try await Course.query(on: req.db).filter(\.$published == true).all()
 		guard !courses.contains(where: { $0.annuallyIAPIdentifier.isEmpty }) else {
-		#warning("Send email to admin: at least 1 published course has an empty IAP identifier")
-			throw Abort(.internalServerError)
+			let error = Abort(.internalServerError, reason: "At least 1 published course has an empty IAP identifier")
+			Email.alertAdmin(error: error, client: req.client)
+			throw error
 		}
 		var identifiers = courses.map { $0.annuallyIAPIdentifier }
 		identifiers.append(vipIAPIdentifier)
