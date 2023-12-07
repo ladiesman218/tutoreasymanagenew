@@ -3,10 +3,13 @@ import Vapor
 enum RegistrationError: Error {
 	case passwordsDontMatch
 	case emailAlreadyExists
+	case phoneAlreadyExists
 	case usernameAlreadyExists
 	case passwordLengthError
 	case usernameLengthError
 	case invalidEmail
+	case invalidPhoneNumber
+	case invalidContactInfo
 	case invalidUsername
 	case invalidDate
 }
@@ -20,6 +23,8 @@ extension RegistrationError: DebuggableError, AbortError {
 			return "请确认两次输入的密码完全一致"
 		case .emailAlreadyExists:
 			return "邮箱地址被占用"
+		case .phoneAlreadyExists:
+			return "手机号码被占用"
 		case .usernameAlreadyExists:
 			return "用户名被占用"
 		case .passwordLengthError:
@@ -28,6 +33,10 @@ extension RegistrationError: DebuggableError, AbortError {
 			return "用户名应长度应介于\(userNameLength.lowerBound.description) 到 \((userNameLength.upperBound - 1).description)个字符之间"
 		case .invalidEmail:
 			return "无效邮箱地址"
+		case .invalidPhoneNumber:
+			return "无效手机号码"
+		case .invalidContactInfo:
+			return "无效邮箱地址或手机号"
 		case .invalidUsername:
 			return "无效用户名"
 		case .invalidDate:
@@ -41,6 +50,8 @@ extension RegistrationError: DebuggableError, AbortError {
 			return "passwords_dont_match"
 		case .emailAlreadyExists:
 			return "email_already_exists"
+		case .phoneAlreadyExists:
+			return "phone_already_exists"
 		case .usernameAlreadyExists:
 			return "username_already_exists"
 		case .passwordLengthError:
@@ -49,6 +60,10 @@ extension RegistrationError: DebuggableError, AbortError {
 			return "username_length_error"
 		case .invalidEmail:
 			return "invalid_email"
+		case .invalidPhoneNumber:
+			return "invalid_phone_number"
+		case .invalidContactInfo:
+			return "invalid_contact_info"
 		case .invalidUsername:
 			return "invalid_username"
 		case .invalidDate:

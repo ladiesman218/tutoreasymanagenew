@@ -22,8 +22,17 @@ final class User: Model, Content {
 		}
 	}
 	
+	enum ContactMethod: String, Codable {
+		case email
+		case phone
+	}
+	
 	struct FieldKeys {
+		static let contactMethod: FieldKey = .string("contact_method")
+		static let primaryContact: FieldKey = .string("primary_contact")
+		static let secondaryContact: FieldKey = .string("secondary_contact")
 		static let email: FieldKey = .string("email")
+		static let phone: FieldKey = .string("phone")
 		static let username: FieldKey = .string("username")
 		static let firstName: FieldKey = .string("first_name")
 		static let lastName: FieldKey = .string("last_name")
@@ -36,9 +45,12 @@ final class User: Model, Content {
 	}
 	
 	@ID var id: UUID?
-	@Field(key: FieldKeys.email) var email: String
+	@Enum(key: FieldKeys.primaryContact) var primaryContact: ContactMethod
+	@OptionalEnum(key: FieldKeys.secondaryContact) var secondaryContact: ContactMethod?
+	@OptionalField(key: FieldKeys.email) var email: String?
+	@OptionalField(key: FieldKeys.phone) var phone: String?
 	@Field(key: FieldKeys.username) var username: String
-	@OptionalField(key: FieldKeys.firstName ) var firstName: String?
+	@OptionalField(key: FieldKeys.firstName) var firstName: String?
 	@OptionalField(key: FieldKeys.lastName) var lastName: String?
 	@Field(key: FieldKeys.password) var password: String
 	@Timestamp(key: FieldKeys.registerTime, on: .create) var registerTime: Date?
@@ -50,10 +62,13 @@ final class User: Model, Content {
 	
 	init() {}
 	
-    init(email: String, username: String, firstName: String?, lastName: String?, password: String, profilePic: String?) {
+	init(primaryContact: ContactMethod, secondaryContact: ContactMethod? = nil, email: String? = nil, phone: String? = nil, username: String, firstName: String?, lastName: String?, password: String, profilePic: String?) {
 		// 2 values are fixed when creating a new instance, id is always nil and verified is false.
 		self.id = nil
+		self.primaryContact = primaryContact
+		self.secondaryContact = secondaryContact
 		self.email = email
+		self.phone = phone
 		self.username = username
 		self.firstName = firstName
 		self.lastName = lastName
@@ -64,6 +79,8 @@ final class User: Model, Content {
 }
 
 extension User: ModelAuthenticatable {
+	static let email = \User.$email
+	static let phone = \User.$phone
 	static let usernameKey = \User.$username
 	static let passwordHashKey = \User.$password
 
@@ -75,7 +92,7 @@ extension User: ModelAuthenticatable {
 extension User {
 	
 	struct RegisterInput: Decodable {
-		let email: String
+		let contactInfo: String
 		let username: String
 		var firstName: String?
 		var lastName: String?
@@ -83,11 +100,13 @@ extension User {
 		let password2: String
 		
 		func validate(errors: inout [DebuggableError], req: Request) async throws {
-			async let foundEmail = User.query(on: req.db).filter(\.$email == email).first()
+			async let foundEmail = User.query(on: req.db).filter(\.$email == contactInfo).first()
+			async let foundPhoneNumber = User.query(on: req.db).filter(\.$phone == contactInfo).first()
 			async let foundUsername = User.query(on: req.db).filter(\.$username == username).first()
 
-			if email.range(of: emailRegex, options: .regularExpression) == nil {
-				errors.append(RegistrationError.invalidEmail)
+			if contactInfo.range(of: emailRegex, options: .regularExpression) == nil &&
+				contactInfo.range(of: cnPhoneRegex, options: .regularExpression) == nil {
+				errors.append(RegistrationError.invalidContactInfo)
 			}
 			if !userNameLength.contains(username.count) {
 				errors.append(RegistrationError.usernameLengthError)
@@ -104,14 +123,33 @@ extension User {
 			if !passwordLength.contains(password1.count) {
 				errors.append(RegistrationError.passwordLengthError)
 			}
-//			let startTime = Date.now
 			if try await foundEmail != nil {
 				errors.append(RegistrationError.emailAlreadyExists)
+			}
+			if try await foundPhoneNumber != nil {
+				errors.append(RegistrationError.phoneAlreadyExists)
 			}
 			if try await foundUsername != nil {
 				errors.append(RegistrationError.usernameAlreadyExists)
 			}
-//			print(Date.now.timeIntervalSince(startTime))
+		}
+		
+		func generateUser(req: Request) async throws -> User {
+			var errors = [DebuggableError]()
+			try await validate(errors: &errors, req: req)
+			guard errors.isEmpty else { throw errors.abort }
+			let hashedPassword = try Bcrypt.hash(password1)
+			
+			let contactMethod: ContactMethod = (contactInfo.range(of: emailRegex, options: .regularExpression) != nil) ? .email : .phone
+			
+			let user = User(primaryContact: contactMethod, username: username, firstName: firstName, lastName: lastName, password: hashedPassword, profilePic: nil)
+			switch contactMethod {
+				case .email:
+					user.email = contactInfo
+				case .phone:
+					user.phone = contactInfo
+			}
+			return user
 		}
 	}
 }
@@ -120,7 +158,10 @@ extension User {
 	
 	struct PublicInfo: Content {
 		let id: UUID
-		let email: String
+		let primaryContact: ContactMethod
+		let secondaryContact: ContactMethod?
+		let email: String?
+		let phone: String?
 		let username: String
 		var firstName: String?
 		var lastName: String?
@@ -130,7 +171,7 @@ extension User {
 	}
 	
 	var publicInfo: PublicInfo {
-		.init(id: id!, email: self.email, username: self.username, firstName: self.firstName, lastName: self.lastName, registerTime: self.registerTime, lastLoginTime: self.lastLoginTime, profilePic: self.profilePic)
+		.init(id: id!, primaryContact: self.primaryContact, secondaryContact: self.secondaryContact, email: self.email, phone: self.phone, username: self.username, firstName: self.firstName, lastName: self.lastName, registerTime: self.registerTime, lastLoginTime: self.lastLoginTime, profilePic: self.profilePic)
 	}
 }
 

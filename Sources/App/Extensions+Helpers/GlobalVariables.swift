@@ -11,8 +11,8 @@ let appleRootCert = "" // Root certificate for verify in app purchase notificati
 let appleBundleID = "com.dunce.TutorEasy"
 let vipIAPIdentifier = "vip_test"
 
-let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-let phoneNumberRegex = "^([+](\\d{1,3}|\\d{1,2}[- ]{1,}\\d{3,4})[- ]{1,}){0,1}\\d{5,20}$"
+let emailRegex = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}$"
+let cnPhoneRegex = "^\\+?(86)?[ -]?1[3-9][0-9][ -]?[0-9]{4}[ -]?[0-9]{4}$"
 let trialRegex = Regex {
 	ZeroOrMore(.whitespace)
 	OneOrMore("-")
