@@ -7,7 +7,7 @@
 
 import Vapor
 
-enum EmailError: Error {
+enum MessageError: Error {
 	case unableToSend(response: ClientResponse)
 	case messageBodyError(template: String, placeHolders: [String])
 	case invalidRecipient(recipient: Email.Account)
@@ -15,7 +15,7 @@ enum EmailError: Error {
 	case invalidSubject
 }
 
-extension EmailError: DebuggableError, AbortError {
+extension MessageError: DebuggableError, AbortError {
 	var status: HTTPResponseStatus {
 		switch self {
 			case .unableToSend:

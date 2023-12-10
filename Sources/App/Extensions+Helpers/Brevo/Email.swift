@@ -20,14 +20,14 @@ struct Email {
 	
 	func validate() throws {
 		guard !sender.name.isEmpty && sender.email.range(of: emailRegex, options: .regularExpression) != nil else {
-			throw EmailError.invalidSender(sender: sender)
+			throw MessageError.invalidEmailSender(sender: sender)
 		}
 		
 		if let invalidRecipient = recipients.filter({ $0.name.isEmpty || $0.email.range(of: emailRegex, options: .regularExpression) == nil}).first {
-			throw EmailError.invalidRecipient(recipient: invalidRecipient)
+			throw MessageError.invalidEmailRecipient(recipient: invalidRecipient)
 		}
 		guard !subject.isEmpty else {
-			throw EmailError.invalidSubject
+			throw MessageError.invalidEmailSubject
 		}
 	}
 	
@@ -46,11 +46,11 @@ struct Email {
 				var headers = HTTPHeaders()
 				headers.replaceOrAdd(name: .accept, value: "application/json")
 				headers.replaceOrAdd(name: .contentType, value: "application/json")
-				headers.replaceOrAdd(name: "api-key", value: Self.brevoAPI)
+				headers.replaceOrAdd(name: "api-key", value: brevoAPI)
 				
 				let response = try await client.post(Self.apiEndpoint, headers: headers, content: string)
 				guard response.status.code < 300 && response.status.code > 200 else {
-					throw EmailError.unableToSend(response: response)
+					throw MessageError.unableToSend(response: response)
 				}
 			}
 		} catch {
@@ -62,9 +62,6 @@ struct Email {
 // Define static variables and sub-type
 extension Email {
 	static let apiEndpoint = URI(string: "https://api.brevo.com/v3/smtp/email")
-	static var brevoAPI:String {
-		get{ return Environment.get("BREVOAPI")! }
-	}
 	
 	struct Account: Codable {
 		let name: String
@@ -109,14 +106,14 @@ extension Email {
 		// Pass in client, so when this function throws, admin will get an email alert.
 		static func generate(placeHolders: [String], template: String, client: Client) throws -> Self {
 			guard !template.isEmpty else {
-				let error =  EmailError.messageBodyError(template: template, placeHolders: placeHolders)
+				let error =  MessageError.messageBodyError(template: template, placeHolders: placeHolders)
 				Email.alertAdmin(error: error, client: client)
 				throw error
 			}
 			// If no separator is found in html, the entire string will be split to an array contains 1 item.
 			let array = template.split(separator: Self.placeHolder)
 			guard placeHolders.count + 1 == array.count else {
-				let error =  EmailError.messageBodyError(template: template, placeHolders: placeHolders)
+				let error = MessageError.messageBodyError(template: template, placeHolders: placeHolders)
 				Email.alertAdmin(error: error, client: client)
 				Email.alertAdmin(error: error, client: client)
 				throw error
