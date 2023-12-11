@@ -1,7 +1,6 @@
 import Vapor
 import RegexBuilder
 
-let adminEmail = "chn_dunce@126.com"
 // Practically path(string) is better than url, both FileManager functions such as fileExists and swift NIO functions for serving files such as req.fileio.streamFile use paths, also access remote files with urls of a file:// scheme seems very hard to tweak. Using urls here is only because it's a little easier to compose, simply return the composed url.path for whenever needed.
 let workingDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let coursesDirectoryName = "Courses"
@@ -11,8 +10,6 @@ let appleRootCert = "" // Root certificate for verify in app purchase notificati
 let appleBundleID = "com.dunce.TutorEasy"
 let vipIAPIdentifier = "vip_test"
 
-let emailRegex = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}$"
-let cnPhoneRegex = "^\\+?(86)?[ -]?1[3-9][0-9][ -]?[0-9]{4}[ -]?[0-9]{4}$"
 let trialRegex = Regex {
 	ZeroOrMore(.whitespace)
 	OneOrMore("-")

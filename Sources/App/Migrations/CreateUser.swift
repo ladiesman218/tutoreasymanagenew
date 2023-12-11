@@ -39,7 +39,10 @@ struct CreateUser: AsyncMigration {
 		let emailNullConstraint = DatabaseSchema.Constraint.sql(SQLTableConstraintAlgorithm.check(emailNotNull))
 		let phoneNullConstraint = DatabaseSchema.Constraint.sql(SQLTableConstraintAlgorithm.check(phoneNotNull))
 		
-		try await database.schema(User.schema).constraint(contactsNotSameConstraint).constraint(emailNullConstraint).constraint(phoneNullConstraint).update()
+		let emailValid = SQLRaw("email ~* '\(emailRegex)'")
+		let emailValidConstraint = DatabaseSchema.Constraint.sql(SQLTableConstraintAlgorithm.check(emailValid))
+
+		try await database.schema(User.schema).constraint(contactsNotSameConstraint).constraint(emailNullConstraint).constraint(phoneNullConstraint).constraint(emailValidConstraint).update()
 	}
 	
 	func revert(on database: Database) async throws {

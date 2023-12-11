@@ -62,7 +62,7 @@ final class User: Model, Content {
 	
 	init() {}
 	
-	init(primaryContact: ContactMethod, secondaryContact: ContactMethod? = nil, email: String? = nil, phone: String? = nil, username: String, firstName: String?, lastName: String?, password: String, profilePic: String?) {
+	init(primaryContact: ContactMethod, secondaryContact: ContactMethod? = nil, email: String? = nil, phone: String? = nil, username: String, firstName: String? = nil, lastName: String? = nil, password: String, profilePic: String? = nil) {
 		// 2 values are fixed when creating a new instance, id is always nil and verified is false.
 		self.id = nil
 		self.primaryContact = primaryContact
@@ -78,6 +78,7 @@ final class User: Model, Content {
 	}
 }
 
+#warning("test email and phone verification, do they need to be here?")
 extension User: ModelAuthenticatable {
 	static let email = \User.$email
 	static let phone = \User.$phone

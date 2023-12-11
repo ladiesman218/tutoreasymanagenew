@@ -10,9 +10,10 @@ import Vapor
 enum MessageError: Error {
 	case unableToSend(response: ClientResponse)
 	case messageBodyError(template: String, placeHolders: [String])
-	case invalidRecipient(recipient: Email.Account)
-	case invalidSender(sender: Email.Account)
-	case invalidSubject
+	case invalidEmailRecipient(recipient: User)
+	case invalidSMSRecipient(recipient: User)
+	case invalidEmailSender(sender: Email.Account)
+	case invalidEmailSubject
 }
 
 extension MessageError: DebuggableError, AbortError {
@@ -22,11 +23,11 @@ extension MessageError: DebuggableError, AbortError {
 				return .internalServerError
 			case .messageBodyError:
 				return .badRequest
-			case .invalidRecipient:
+			case .invalidEmailRecipient, .invalidSMSRecipient:
 				return .badRequest
-			case .invalidSender:
+			case .invalidEmailSender:
 				return .badRequest
-			case .invalidSubject:
+			case .invalidEmailSubject:
 				return .badRequest
 		}
 	}
@@ -34,14 +35,16 @@ extension MessageError: DebuggableError, AbortError {
 	var reason: String {
 		switch self {
 			case .unableToSend(let response):
-				return "无法发送邮件：\(response)"
+				return "邮件或短信发送失败：\(response)"
 			case .messageBodyError(let template, let placeHolders):
 				return "邮件信息错误: 模板:\(template), 占位符：\(placeHolders) "
-			case .invalidRecipient(let recipient):
+			case .invalidEmailRecipient(let recipient):
 				return "收件人错误: \(recipient)"
-			case .invalidSender(let sender):
+			case .invalidSMSRecipient(let recipient):
+				return "短信号码错误: \(recipient)"
+			case .invalidEmailSender(let sender):
 				return "发件人错误: \(sender)"
-			case .invalidSubject:
+			case .invalidEmailSubject:
 				return "邮件标题错误"
 		}
 	}
@@ -52,11 +55,13 @@ extension MessageError: DebuggableError, AbortError {
 				return "unable_to_send_email"
 			case .messageBodyError:
 				return "email_message_body_error"
-			case .invalidRecipient:
-				return "invalid_recipient"
-			case .invalidSender:
+			case .invalidEmailRecipient(let recipient):
+				return "invalid_email_recipient: \(recipient)"
+			case .invalidSMSRecipient(let recipient):
+				return "invalid_sms_recipient: \(recipient)"
+			case .invalidEmailSender:
 				return "invalid_sender"
-			case .invalidSubject:
+			case .invalidEmailSubject:
 				return "invalid_subject"
 		}
 	}
