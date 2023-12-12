@@ -78,18 +78,6 @@ final class User: Model, Content {
 	}
 }
 
-#warning("test email and phone verification, do they need to be here?")
-extension User: ModelAuthenticatable {
-	static let email = \User.$email
-	static let phone = \User.$phone
-	static let usernameKey = \User.$username
-	static let passwordHashKey = \User.$password
-
-	func verify(password: String) throws -> Bool {
-		try Bcrypt.verify(password, created: self.password)
-	}
-}
-
 extension User {
 	
 	struct RegisterInput: Decodable {
@@ -179,5 +167,41 @@ extension User {
 extension User: Equatable {
 	static func == (lhs: User, rhs: User) -> Bool {
 		return lhs.id == rhs.id
+	}
+}
+
+// In order to utilize the request.auth property, User has to conform to ModelAuthenticatable protocol. But the default implementation only allows one field in db to be used as username. Here we wanna use either one from these 3: username, email or phone number. So everything in the following protocol conformance is required and default, except for 1 we've customized: authenticator() function now returns a customized UserAuthenticator instance instead of ModelAuthenticatable's default implementation.
+extension User: ModelAuthenticatable {
+	static let usernameKey = \User.$username
+	static let passwordHashKey = \User.$password
+	
+	public static func authenticator(
+		database: DatabaseID? = nil
+	) -> Authenticator {
+		UserAuthenticator()
+	}
+	func verify(password: String) throws -> Bool {
+		try Bcrypt.verify(password, created: self.password)
+	}
+}
+
+struct UserAuthenticator: BasicAuthenticator {
+	func authenticate(basic: Vapor.BasicAuthorization, for request: Vapor.Request) -> EventLoopFuture<Void> {
+		User.query(on: request.db).group(.or, { group in
+			group.filter(\.$username == basic.username)
+			group.filter(\.$email == basic.username)
+			group.filter(\.$phone == basic.username)
+		})
+		.first()
+		.flatMapThrowing
+		{
+			guard let user = $0 else {
+				return
+			}
+			guard try user.verify(password: basic.password) else {
+				return
+			}
+			request.auth.login(user)
+		}
 	}
 }
