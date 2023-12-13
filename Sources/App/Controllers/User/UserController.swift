@@ -9,11 +9,13 @@ struct UserController: RouteCollection {
 		let publicUsersAPI = routes.grouped("api", "user")
 		publicUsersAPI.post("register", use: register)
 		publicUsersAPI.get("activate", ":id", ":code", use: activate)
+		// User can ask for a verification code by providing their login credential, it can be an id, email, or phone number
+		publicUsersAPI.post("sendcode", ":credential", use: sendCode)
 		
 		let protectedUsersAPI = publicUsersAPI.grouped(User.authenticator(), Token.authenticator())
 		protectedUsersAPI.post("login", use: login)
 		protectedUsersAPI.post("logout", use: logout)
-		protectedUsersAPI.get("validate", use: validateToken)
+		protectedUsersAPI.post("activate", use: activate)
 		
 		let tokenAuthGroup = publicUsersAPI.grouped(Token.authenticator(), User.guardMiddleware())
 		tokenAuthGroup.get("public-info", use: getPublicUserInfo)
@@ -24,10 +26,19 @@ struct UserController: RouteCollection {
 		let input = try req.content.decode(User.RegisterInput.self)
 		let user = try await input.generateUser(req: req)
 		try await user.create(on: req.db)
-		try await sendVerificationCode(req, userID: user.requireID())
+		try await Self.sendVerificationCode(req, credential: user.requireID().uuidString)
 		try await Self.queueDeleteUser(req, user: user)
 		
 		return .created
+	}
+	
+	func sendCode(_ req: Request) async throws -> HTTPStatus {
+		guard let credential = req.parameters.get("credential") else {
+			throw Abort(.badRequest)
+		}
+
+		try await Self.sendVerificationCode(req, credential: credential)
+		return .ok
 	}
 	
 	func activate(_ req: Request) async throws -> HTTPStatus {
@@ -64,11 +75,6 @@ struct UserController: RouteCollection {
 		return .ok
 	}
 	
-	func validateToken(_ req: Request) -> Bool {
-		let token: Token? = try? req.auth.require(Token.self)
-		return token != nil
-	}
-	
 	func getPublicUserInfo(_ req: Request) async throws -> User.PublicInfo {
 		let user = try req.auth.require(User.self)
 		try await updateLoginTime(req, user: user)
@@ -92,10 +98,22 @@ struct UserController: RouteCollection {
 		try await user.save(on: req.db)
 		return .ok
 	}
-	
-	func sendVerificationCode(_ req: Request, userID: User.IDValue) async throws {
-		// Make sure user has been stored in db
-		guard let user = try await User.find(userID, on: req.db) else {
+}
+
+// Functions in extension shouldn't be called in boot()
+extension UserController {
+	static func sendVerificationCode(_ req: Request, credential: String) async throws {
+		guard !credential.isEmpty else {
+			throw Abort(.badRequest, reason: "请登录或输入有效账号")
+		}
+		
+		guard let user = try await User.query(on: req.db).group(.or, { group in
+			if let id = UUID(uuidString: credential) {
+				group.filter(\.$id == id)
+			}
+			group.filter(\.$email == credential)
+			group.filter(\.$phone == credential)
+		}).first() else {
 			throw AuthenticationError.userNotFound
 		}
 		// If user has requested a code in less than 1 minute ago
@@ -108,7 +126,7 @@ struct UserController: RouteCollection {
 		let code = User.VerificationCode()
 		user.verificationCode = code
 		try await user.save(on: req.db)
-
+		
 		// Send the code via primary contact method
 		switch user.primaryContact {
 			case .email:
@@ -122,14 +140,11 @@ struct UserController: RouteCollection {
 				}
 				sms.send(client: req.client)
 		}
-
+		
 		// Queue the job to remove code later.
 		try? await Self.queueDeleteVerificationCode(req, user: user, code: code)
 	}
-}
-
-// Functions in extension shouldn't be called in boot()
-extension UserController {
+	
 	// This function only returns the user if everything works as expected, or throws if anything goes wrong. Code verification could do more than just verify the user for the first time.
 	static func verifyCode(_ req: Request) async throws -> User {
 		guard let idString = req.parameters.get("id"),
