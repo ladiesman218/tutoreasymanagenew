@@ -79,6 +79,9 @@ final class User: Model, Content {
 }
 
 extension User {
+	func updateLoginTime() {
+		self.lastLoginTime = Date.now
+	}
 	
 	struct RegisterInput: Decodable {
 		let contactInfo: String
@@ -129,7 +132,7 @@ extension User {
 			guard errors.isEmpty else { throw errors.abort }
 			let hashedPassword = try Bcrypt.hash(password1)
 			
-			let contactMethod: ContactMethod = (contactInfo.range(of: emailRegex, options: .regularExpression) != nil) ? .email : .phone
+			let contactMethod = try Self.generateContactMethod(contactInfo: contactInfo)
 			
 			let user = User(primaryContact: contactMethod, username: username, firstName: firstName, lastName: lastName, password: hashedPassword, profilePic: nil)
 			switch contactMethod {
@@ -139,6 +142,16 @@ extension User {
 					user.phone = contactInfo
 			}
 			return user
+		}
+		
+		static func generateContactMethod(contactInfo: String) throws -> ContactMethod {
+			if contactInfo.range(of: emailRegex, options: .regularExpression) != nil {
+				return .email
+			} else if contactInfo.range(of: cnPhoneRegex, options: .regularExpression) != nil {
+				return .phone
+			} else {
+				throw RegistrationError.invalidContactInfo
+			}
 		}
 	}
 }
@@ -157,10 +170,11 @@ extension User {
 		let registerTime: Date?
 		let lastLoginTime: Date?
         let profilePic: String?
+		let verified: Bool
 	}
 	
 	var publicInfo: PublicInfo {
-		.init(id: id!, primaryContact: self.primaryContact, secondaryContact: self.secondaryContact, email: self.email, phone: self.phone, username: self.username, firstName: self.firstName, lastName: self.lastName, registerTime: self.registerTime, lastLoginTime: self.lastLoginTime, profilePic: self.profilePic)
+		.init(id: id!, primaryContact: self.primaryContact, secondaryContact: self.secondaryContact, email: self.email, phone: self.phone, username: self.username, firstName: self.firstName, lastName: self.lastName, registerTime: self.registerTime, lastLoginTime: self.lastLoginTime, profilePic: self.profilePic, verified: verified)
 	}
 }
 
