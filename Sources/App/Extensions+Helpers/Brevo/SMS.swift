@@ -11,28 +11,21 @@ import Queues
 struct SMS: Codable {
 	static let apiEndpoint = URI("https://api.brevo.com/v3/transactionalSMS/sms")
 	
-	private let sender: String
+	private var sender: String = serviceName
 	let recipient: String
 	let content: String
 	
-	init?(recipient: User, template: MessageTemplates.Template, placeHolders: [String], client: Client) {
-		self.sender = "TutorEasy"
-		
+	// The recipient may be manually typed in by users, if a invalid value is given, this init function throws so that proper error could be dealt with.
+	init(recipient: String, message: MessageBody, client: Client) throws {
 		// Recipient validation
-		guard let number = recipient.phone, number.range(of: cnPhoneRegex, options: .regularExpression) != nil else {
-			let error = MessageError.invalidSMSRecipient(recipient: recipient)
-			Email.alertAdmin(error: error, client: client)
-			return nil
+		guard recipient.range(of: cnPhoneRegex, options: .regularExpression) != nil else {
+			throw MessageError.invalidSMSRecipient(recipient: recipient)
 		}
 		
-		let numberWithCountry = (number.hasPrefix("+86")) ? number : "+86" + number
+		let numberWithCountry = (recipient.hasPrefix("+86")) ? recipient : "+86" + recipient
 		self.recipient = numberWithCountry
 		
-		// Message body validation. If this fails, it will send email to admin automatically
-		guard let messageString = MessageTemplates.generate(template: template, placeHolders: placeHolders, removeHTML: true, client: client) else {
-			return nil
-		}
-		self.content = messageString
+		self.content = message.string
 	}
 	
 	func send(client: Client) {

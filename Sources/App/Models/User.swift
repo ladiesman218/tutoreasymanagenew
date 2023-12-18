@@ -5,22 +5,27 @@ struct ProfilePicData: Content {
     var image: Data
 }
 
+// Value is the actual verification code, genTime is used to store timestamp when the code is generated, we use the combination of these 2 to compare if 2 codes are identical.
+struct VerificationCode: Codable, Equatable {
+	let value: String
+	let genTime: Date
+	init(user: User) throws {
+		// If user has requested a code in less than 1 minute ago
+		if let lastTime = user.verificationCode?.genTime,
+		   Date(timeInterval: 60, since: lastTime) > Date.now {
+			throw AuthenticationError.frequentCodeRequest
+		}
+		
+		var string = ""
+		for _ in 1 ... 6 { string += String(Int.random(in: 1...9)) }
+		self.value = string
+		self.genTime = Date.now
+	}
+}
 
 final class User: Model, Content {
 	
 	static let schema = "users"
-	
-	// Value is the actual verification code, genTime is used to store timestamp when the code is generated, we use the combination of these 2 to compare if 2 codes are identical.
-	struct VerificationCode: Codable, Equatable {
-		let value: String
-		let genTime: Date
-		init() {
-			var string = ""
-			for _ in 1 ... 6 { string += String(Int.random(in: 1...9)) }
-			self.value = string
-			self.genTime = Date.now
-		}
-	}
 	
 	enum ContactMethod: String, Codable {
 		case email

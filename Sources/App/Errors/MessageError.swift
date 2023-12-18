@@ -10,8 +10,8 @@ import Vapor
 enum MessageError: Error {
 	case unableToSend(response: ClientResponse)
 	case messageBodyError(template: String, placeHolders: [String])
-	case invalidEmailRecipient(recipient: User)
-	case invalidSMSRecipient(recipient: User)
+	case invalidEmailRecipient(recipient: String)
+	case invalidSMSRecipient(recipient: String)
 	case invalidEmailSender(sender: Email.Account)
 	case invalidEmailSubject
 }

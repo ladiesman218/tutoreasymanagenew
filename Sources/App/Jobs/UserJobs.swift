@@ -17,7 +17,7 @@ struct UserExecution: Codable {
 	
 	let execution: Execution
 	let userID: User.IDValue
-	var code: User.VerificationCode?
+	var code: VerificationCode?
 }
 
 struct UserJobs: AsyncJob {

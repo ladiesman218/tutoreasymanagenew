@@ -8,21 +8,20 @@ struct UserController: RouteCollection {
 	func boot(routes: RoutesBuilder) throws {
 		let publicUsersAPI = routes.grouped("api", "user")
 		publicUsersAPI.post("register", use: register)
-		// Following routes are public, but they need userID and verification code to work, so these should be safe
-		publicUsersAPI.get("activate", ":id", ":code", use: activate)
-		publicUsersAPI.post("otplogin", ":id", ":code", use: loginViaOTP)
-		publicUsersAPI.post("setContact", ":id", ":code", use: changeContactInfo)
-		publicUsersAPI.post("resetpw", ":id", ":code", use: resetPassword)
-		
-		publicUsersAPI.post("newContact", ":contact", use: requestNewContact)
-
-		// User can ask for a verification code by providing their login credential, it can be an id, email, or phone number
+		// sendCode() use ":credential" to guard a user is found by the given credential, it can be an username, an email address or phone number. So this should be called for normal usage: otplogin or reset password, not for changing a new contact address coz in that senario if we pass in the new address as ":credential", it won't be able to find an associated user since user and new address haven't been bound yet.
 		publicUsersAPI.post("sendcode", ":credential", use: sendCode)
-		
+		// Following routes are public, but they need userID and verification code to work, so these should be safe.
+		publicUsersAPI.post("otplogin", ":id", ":code", use: loginViaOTP)
+		publicUsersAPI.post("resetpw", ":id", ":code", use: resetPassword)
+
 		let protectedUsersAPI = publicUsersAPI.grouped(User.authenticator(), Token.authenticator())
 		protectedUsersAPI.post("login", use: loginViaCredentials)
 		protectedUsersAPI.post("logout", use: logout)
-		protectedUsersAPI.post("activate", use: activate)
+		protectedUsersAPI.post("activate", ":id", ":code", use: activate)
+		// Change existing contact method to a new address. This is a 2 step process: first we need to send verification code to an address has't been bound to a user, so we need user id to manually bind them together.
+		protectedUsersAPI.post("newcontact", ":id", ":contact", use: requestCodeForNewContact)
+		// Second step of changing an existing contact is to verify the code, then decode new contact string from request.content, update user's info in db
+		protectedUsersAPI.post("updatecontact", ":id", ":code", use: updateContact)
 		
 		let tokenAuthGroup = publicUsersAPI.grouped(Token.authenticator(), User.guardMiddleware())
 		tokenAuthGroup.get("public-info", use: getPublicUserInfo)
@@ -32,19 +31,86 @@ struct UserController: RouteCollection {
 	func register(_ req: Request) async throws -> HTTPStatus {
 		let input = try req.content.decode(User.RegisterInput.self)
 		let user = try await input.generateUser(req: req)
+		let code = try VerificationCode(user: user)
+		user.verificationCode = code
 		try await user.create(on: req.db)
-		try await Self.sendVerificationCode(req, credential: user.requireID().uuidString)
+		
+		let recipient = input.contactInfo
+		try Self.sendMessage(to: recipient, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
 		try await Self.queueDeleteUser(req, user: user)
 		
 		return .created
 	}
 	
 	func sendCode(_ req: Request) async throws -> HTTPStatus {
-		guard let credential = req.parameters.get("credential") else {
+		guard let credential = req.parameters.get("credential") else { throw Abort(.badRequest) }
+		
+		guard let user = try await User.query(on: req.db).group(.or, { group in
+			group.filter(\.$email == credential)
+				.filter(\.$phone == credential)
+				.filter(\.$username == credential)
+		}).first() else {
+			throw AuthenticationError.userNotFound
+		}
+		
+		let code = try VerificationCode(user: user)
+		user.verificationCode = code
+		
+		let address: String
+		if user.username == credential {
+			switch user.primaryContact {
+				case .email:
+					address = user.email!
+				case .phone:
+					address = user.phone!
+			}
+		} else {
+			address = credential
+		}
+		
+		try Self.sendMessage(to: address, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
+		
+		// Save the code in db only when message is sent.
+		try await user.save(on: req.db)
+
+		// Queue the job to remove code later.
+		try? await Self.queueDeleteVerificationCode(req, user: user, code: code)
+		return .ok
+	}
+	
+	func requestCodeForNewContact(_ req: Request) async throws -> HTTPStatus {
+		guard let contact = req.parameters.get("contact"),
+			  let idString = req.parameters.get("id"),
+			  let id = UUID(idString) else {
 			throw Abort(.badRequest)
 		}
+		
+		guard let user = try await User.find(id, on: req.db) else { throw AuthenticationError.userNotFound }
+		
+		let code = try VerificationCode(user: user)
+		user.verificationCode = code
+		
+		try Self.sendMessage(to: contact, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
+		// Save the code in db only when message is sent.
+		try await user.save(on: req.db)
 
-		try await Self.sendVerificationCode(req, credential: credential)
+		// Queue the job to remove code later.
+		try? await Self.queueDeleteVerificationCode(req, user: user, code: code)
+		return .ok
+	}
+	
+	func updateContact(_ req: Request) async throws -> HTTPStatus {
+		let user = try await Self.verifyCode(req)
+		let string = try req.content.decode(String.self)
+		let method = try User.RegisterInput.generateContactMethod(contactInfo: string)
+		
+		switch method {
+			case .email:
+				user.email = string
+			case .phone:
+				user.phone = string
+		}
+		try await user.save(on: req.db)
 		return .ok
 	}
 	
@@ -58,65 +124,33 @@ struct UserController: RouteCollection {
 	
 	func resetPassword(_ req: Request) async throws -> HTTPStatus {
 		let user = try await Self.verifyCode(req)
-		let newPassword = try req.content.decode(String.self)
-		guard !newPassword.isEmpty else {
+		let passwordArray = try req.content.decode([String].self)
+		guard passwordArray.count == 2 else {
+			throw Abort(.badRequest)
+		}
+		
+		let password1 = passwordArray[0], password2 = passwordArray[1]
+		
+		guard password1 == password2 else {
+			throw RegistrationError.passwordsDontMatch
+		}
+		guard passwordLength.contains(password1.count) else {
 			throw RegistrationError.passwordLengthError
 		}
-		let hashedPassword = try Bcrypt.hash(newPassword)
+		
+		let hashedPassword = try Bcrypt.hash(password1)
 		user.password = hashedPassword
 		try await user.save(on: req.db)
 		return .ok
 	}
-	
-	func requestNewContact(_ req: Request) async throws -> HTTPStatus{
-		guard let contact = req.parameters.get("contact") else {
-			throw Abort(.badRequest)
-		}
-		guard let method = try? User.RegisterInput.generateContactMethod(contactInfo: contact) else {
-			throw RegistrationError.invalidContactInfo
-		}
-//		switch method {
-//			case .email:
-//				let email
-//		}
-		return .ok
-	}
-	
-	func changeContactInfo(_ req: Request) async throws -> HTTPStatus {
-		#warning("verify the new info actually belongs to the user")
-		async let user = try await Self.verifyCode(req)
-		
-		// Get new contact info from request body, do validation. requestBody should be decoded to something like ["primaryContact": "test@test.com"]
-		let requestBody = try req.content.decode(Dictionary<String, String>.self)
-		guard requestBody.count == 1, let dict = requestBody.first else { throw Abort(.badRequest) }
-		// Decide which type of contact info the new string is, if it's neither an email nor a phone, the function throws
-		let newInfo = try User.RegisterInput.generateContactMethod(contactInfo: dict.value)
 
-		// Change primary or secondary contact info to newInfo, base on the key.
-		if dict.key == User.FieldKeys.primaryContact.description {
-			try await user.primaryContact = newInfo
-		} else if dict.key == User.FieldKeys.secondaryContact.description {
-			try await user.secondaryContact = newInfo
-		} else {
-			throw Abort(.badRequest)
-		}
-		// Change email or phone field in db into new string value, base on newInfo case.
-		switch newInfo {
-			case .email:
-				try await user.email = dict.value
-			case .phone:
-				try await user.phone = dict.value
-		}
-		try await user.save(on: req.db)
-		return .ok
-	}
-	
 	// Via one time password sent by email or SMS
 	func loginViaOTP(_ req: Request) async throws -> Token {
 		let user = try await Self.verifyCode(req)
 		return try await Self.login(req, user: user)
 	}
 	
+	// Basic username/password login, support replacing username by email or phone number.
 	func loginViaCredentials(_ req: Request) async throws -> Token {
 		let user: User
 		
@@ -159,58 +193,36 @@ struct UserController: RouteCollection {
 
 // Functions in extension shouldn't be called in boot()
 extension UserController {
-	static func sendVerificationCode(_ req: Request, credential: String) async throws {
-		guard !credential.isEmpty else {
-			throw Abort(.badRequest, reason: "请登录或输入有效账号")
-		}
-		
-		guard let user = try await User.query(on: req.db).group(.or, { group in
-			if let id = UUID(uuidString: credential) {
-				group.filter(\.$id == id)
-			}
-			group.filter(\.$username == credential)
-			group.filter(\.$email == credential)
-			group.filter(\.$phone == credential)
-		}).first() else {
+	// subject can be nil if recipient is a phone number.
+	static func sendMessage(to recipient: String, user: User, subject: String? = nil, template: MessageBody.Template, placeHolders: [String], client: Client) throws {
+		// Make sure user is already stored in db
+		guard let _ = try? user.requireID() else {
 			throw AuthenticationError.userNotFound
 		}
-		// If user has requested a code in less than 1 minute ago
-		if let lastTime = user.verificationCode?.genTime,
-		   Date(timeInterval: 60, since: lastTime) > Date.now {
-			throw AuthenticationError.frequentCodeRequest
-		}
 		
-		// Generate code for user, then store it in db.
-		let code = User.VerificationCode()
-		user.verificationCode = code
-		try await user.save(on: req.db)
+		let method = try User.RegisterInput.generateContactMethod(contactInfo: recipient)
 		
-		// Decide whether to send the code via SMS or email, can't use nil coalescing here...
-		let method: User.ContactMethod
-		// If the passed in credential stands for a contact method value itself, send code via that method
-		if let contact = try? User.RegisterInput.generateContactMethod(contactInfo: credential) {
-			method = contact
-		} else {
-			method = user.primaryContact
-		}
-
 		switch method {
 			case .email:
-				guard let email = Email(sender: .noreply, to: [user], subject: "师轻松验证码", template: .verificationCode, placeHolders: [code.value], client: req.client) else {
-					return
+				guard let subject = subject else {
+					let error = MessageError.invalidEmailSubject
+					Email.alertAdmin(error: error, client: client)
+					throw error
 				}
-				email.send(client: req.client)
+				
+				// If we get here, means generateContactMethod() didn't throw, so we can safely force try! to generate an account
+				let account = try! Email.Account(name: user.username, email: recipient)
+				let message = try MessageBody(template: template, placeHolders: placeHolders, client: client)
+				let email = try Email(to: [account], subject: subject, message: message, client: client)
+				email.send(client: client)
+				
 			case .phone:
-				guard let sms = SMS(recipient: user, template: .verificationCode, placeHolders: [code.value], client: req.client) else {
-					return
-				}
-				sms.send(client: req.client)
+				let message = try MessageBody(template: template, placeHolders: placeHolders, removeHTML: true, client: client)
+				let sms = try SMS(recipient: recipient, message: message, client: client)
+				sms.send(client: client)
 		}
-		
-		// Queue the job to remove code later.
-		try? await Self.queueDeleteVerificationCode(req, user: user, code: code)
 	}
-		
+	
 	// Code verification could do more than just verify the user for the first time, maybe user is resetting a password, changing a new contact info, or even logging in via onetime code. We will need the user instance for later usage, so this function only returns the user if everything works as expected, or throws if anything goes wrong.
 	static func verifyCode(_ req: Request) async throws -> User {
 		guard let idString = req.parameters.get("id"),
@@ -246,7 +258,7 @@ extension UserController {
 		return token
 	}
 	
-	static func queueDeleteVerificationCode(_ req: Request, user: User, code: User.VerificationCode) async throws {
+	static func queueDeleteVerificationCode(_ req: Request, user: User, code: VerificationCode) async throws {
 		// Delay the job after 7mins
 		let futureTime = Date(timeInterval: 60 * 7, since: code.genTime)
 		try await req.queue.dispatch(UserJobs.self, UserExecution(execution: .deleteCode, userID: user.requireID(), code: code), delayUntil: futureTime)

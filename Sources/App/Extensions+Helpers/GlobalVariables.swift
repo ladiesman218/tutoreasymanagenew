@@ -2,6 +2,7 @@ import Vapor
 import RegexBuilder
 
 // Practically path(string) is better than url, both FileManager functions such as fileExists and swift NIO functions for serving files such as req.fileio.streamFile use paths, also access remote files with urls of a file:// scheme seems very hard to tweak. Using urls here is only because it's a little easier to compose, simply return the composed url.path for whenever needed.
+let serviceName = "师轻松"
 let workingDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let coursesDirectoryName = "Courses"
 let courseRoot = workingDirectory.deletingLastPathComponent().appendingPathComponent(coursesDirectoryName, isDirectory: true).standardizedFileURL

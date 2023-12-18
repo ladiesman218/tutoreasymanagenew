@@ -16,62 +16,43 @@ struct Email: Codable {
 	static let apiEndpoint = URI(string: "https://api.brevo.com/v3/smtp/email")
 
 	struct Account: Codable {
+		
 		let name: String
 		let email: String
-	}
-	
-	// Sender can only be the given options
-	enum Sender {
-		case admin
-		case noreply
-		
-		var account: Account {
-			switch self {
-				case .admin:
-					return Account(name: "admin", email: "admin@mleak.top")
-				case .noreply:
-					return Account(name: "noreply", email: "noreply@mleak.top")
+		// The address may be manually typed in by users, if a invalid value is given, this init function throws so that proper error could be dealt with.
+		init(name: String, email: String) throws {
+			guard email.range(of: emailRegex, options: .regularExpression) != nil else {
+				throw MessageError.invalidEmailRecipient(recipient: email)
 			}
+			self.name = name
+			self.email = email
 		}
 	}
 	
-	let sender: Account
+	// The sender is defined as variable instead of constant, because compiler gives a warning says: Immutable property will not be decoded because it is declared with an initial value which cannot be overwritten.
+	private var sender = try! Email.Account(name: "noreply", email: "noreply@mleak.top")
 	let to: [Account]
 	let subject: String
 	let htmlContent: String
 	
-	init?(sender: Sender, to users: [User], subject: String, template: MessageTemplates.Template, placeHolders: [String], client: Client) {
-		let senderAccount = sender.account
-		// Sender validation
-		guard !senderAccount.name.isEmpty && senderAccount.email.range(of: emailRegex, options: .regularExpression) != nil else {
-			let error = MessageError.invalidEmailSender(sender: senderAccount)
+	init(to accounts: [Account], subject: String, message: MessageBody, client: Client) throws {
+		// Recipients validation, each account should do validation by itself when initializing, and throws when regex is not match. So here we just check the array is not empty.
+		guard !accounts.isEmpty else {
+			let error = MessageError.invalidEmailRecipient(recipient: "Empty recipient")
 			Self.alertAdmin(error: error, client: client)
-			return nil
+			throw error
 		}
-		self.sender = senderAccount
+		self.to = accounts
 		
-		// Recipients validation, db has constraints to check all stored email string match the regex, here we only need to check if a user's email is nil.
-		let invalidRecipients = users.filter({ $0.email == nil })
-		guard invalidRecipients.isEmpty else {
-			invalidRecipients.forEach {
-				Self.alertAdmin(error: MessageError.invalidEmailRecipient(recipient: $0), client: client)
-			}
-			return nil
-		}
-		
-		self.to = users.map { Account(name: $0.username, email: $0.email!) }
-		
-		// Subject can be anything but empty
+		// Subject can be anything but empty.
 		guard !subject.isEmpty else {
 			let error = MessageError.invalidEmailSubject
 			Self.alertAdmin(error: error, client: client)
-			return nil
+			throw error
 		}
 		self.subject = subject
-		
-		// Generate message body, if calling this function fails, an alert email will be sent from passed in client to admin automatically.
-		guard let messageString = MessageTemplates.generate(template: template, placeHolders: placeHolders, client: client) else { return nil }
-		self.htmlContent = messageString
+		// Initializing a MessageBody struct throws if anything goes wrong, so if a MessageBody is successfully initialized, then we can set its string property directly without further checking.
+		self.htmlContent = message.string
 	}
 	
 	func send(client: Client) {
@@ -95,17 +76,12 @@ struct Email: Codable {
 			Self.alertAdmin(error: error, client: client)
 		}
 	}
-	
+		
 	static func alertAdmin(error: Error, client: Client) {
-		// Emailing admin about crucial server side error, generating this mail is vital: it uses force unwrap for optional return values, so if anything goes wrong, server app crash.
-		let errorDescription: String
-		if let error = error as? DebuggableError {
-			errorDescription = MessageTemplates.generate(template: .sysError, placeHolders: [error.reason], client: client)!
-		} else {
-			errorDescription = MessageTemplates.generate(template: .sysError, placeHolders: [error.localizedDescription], client: client)!
-		}
-		let user = User(primaryContact: .email, email: "admin@mleak.top", username: "Admin", password: "12345")
-		let mail = Self(sender: .noreply, to: [user], subject: "Backend error for tutor easy", template: .sysError, placeHolders: [errorDescription], client: client)!
+		// Emailing admin about crucial server side error, generating this mail is vital: it uses force try! to call throwing functions, so if these functions fail, server crash.
+		let errorMessage = try! MessageBody(template: .sysError, placeHolders: [error.localizedDescription], client: client)
+		let admin = try! Email.Account(name: "管理员", email: "admin@mleak.top")
+		let mail = try! Self(to: [admin], subject: "\(serviceName)服务器错误", message: errorMessage, client: client)
 		mail.send(client: client)
 	}
 }

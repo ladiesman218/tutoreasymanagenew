@@ -32,7 +32,7 @@ struct CreateUser: AsyncMigration {
 		let contactsNotSame = SQLRaw("\(User.FieldKeys.primaryContact) != \(User.FieldKeys.secondaryContact)")
 		let contactsNotSameConstraint = DatabaseSchema.Constraint.sql(SQLTableConstraintAlgorithm.check(contactsNotSame))
 		
-		// Both primary and secondary contact methods are not set to email, if either one is, email field can't be nil
+		// Neither primary or secondary contact methods is not set to email, if either one is, email field can't be nil
 		let emailNotNull = SQLRaw("(\(User.FieldKeys.primaryContact) != '\(User.ContactMethod.email.rawValue)' AND \(User.FieldKeys.secondaryContact) != '\(User.ContactMethod.email.rawValue)') OR \(User.FieldKeys.email) IS NOT NULL")
 		let phoneNotNull = SQLRaw("(\(User.FieldKeys.primaryContact) != '\(User.ContactMethod.phone.rawValue)' AND \(User.FieldKeys.secondaryContact) != '\(User.ContactMethod.phone.rawValue)') OR \(User.FieldKeys.phone) IS NOT NULL")
 		
@@ -40,9 +40,11 @@ struct CreateUser: AsyncMigration {
 		let phoneNullConstraint = DatabaseSchema.Constraint.sql(SQLTableConstraintAlgorithm.check(phoneNotNull))
 		
 		let emailValid = SQLRaw("email ~* '\(emailRegex)'")
+		let phoneValid = SQLRaw("phone ~* '\(cnPhoneRegex)'")
 		let emailValidConstraint = DatabaseSchema.Constraint.sql(SQLTableConstraintAlgorithm.check(emailValid))
+		let phoneValidConstraint = DatabaseSchema.Constraint.sql(SQLTableConstraintAlgorithm.check(phoneValid))
 
-		try await database.schema(User.schema).constraint(contactsNotSameConstraint).constraint(emailNullConstraint).constraint(phoneNullConstraint).constraint(emailValidConstraint).update()
+		try await database.schema(User.schema).constraint(contactsNotSameConstraint).constraint(emailNullConstraint).constraint(phoneNullConstraint).constraint(emailValidConstraint).constraint(phoneValidConstraint).update()
 	}
 	
 	func revert(on database: Database) async throws {
