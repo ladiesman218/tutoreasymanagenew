@@ -8,8 +8,9 @@ struct UserController: RouteCollection {
 	func boot(routes: RoutesBuilder) throws {
 		let publicUsersAPI = routes.grouped("api", "user")
 		publicUsersAPI.post("register", use: register)
-		// We only send code to existing or registering users, in other words, users have to be stored in database first to request a code. How we find the user from db varies: for otpLogin and resetPassword, it can be an username, email or phone number cause users won't be able to know their uuid. For changing contact and first time activation, we can use their id coz they have to be logged in to do that.
+		// We only send code to existing or registering users, in other words, users have to be stored in database first to request a code. How we find the user from db varies: for otpLogin and resetPassword, it can be a username, an email or phone number cause users won't be able to know their uuid. For changing contact and first time activation, we can use their id coz they have to be logged in to do that.
 		publicUsersAPI.post("sendcode", ":credential", use: sendCode)
+		publicUsersAPI.post("code", ":credential", ":code", use: verifyCode)
 		// Since in verifyCode() we hardcoded "credential" to retrieve user's credential from request's parameters, all routes need to call verifyCode() must have an request parameter named "credential", what's in it may vary: it could be user's id, username, email or phone number but the parameter's name is fixed.
 		publicUsersAPI.post("otplogin", ":credential", ":code", use: loginViaOTP)
 		publicUsersAPI.post("resetpw", ":credential", ":code", use: resetPassword)
@@ -26,168 +27,180 @@ struct UserController: RouteCollection {
 		let tokenAuthGroup = publicUsersAPI.grouped(Token.authenticator(), User.guardMiddleware())
 		tokenAuthGroup.get("public-info", use: getPublicUserInfo)
 		tokenAuthGroup.on(.POST, "profile-pic", body: .collect(maxSize: "10mb") , use: uploadProfilePic)
-	}
-	
-	func register(_ req: Request) async throws -> HTTPStatus {
-		let input = try req.content.decode(User.RegisterInput.self)
-		let user = try await input.generateUser(req: req)
-		let code = try VerificationCode(user: user)
-		user.verificationCode = code
-		try await user.create(on: req.db)
 		
-		let recipient = input.contactInfo
-		try Self.sendMessage(to: recipient, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
-		try await Self.queueDeleteVerificationCode(req, user: user, code: code)
-		try await Self.queueDeleteUser(req, user: user)
-		
-		return .created
-	}
-	
-	func sendCode(_ req: Request) async throws -> HTTPStatus {
-		guard let credential = req.parameters.get("credential") else {
-			throw Abort(.badRequest)
-		}
-		let user = try await Self.findUser(req)
-		
-		let code = try VerificationCode(user: user)
-		user.verificationCode = code
-		
-		let address: String
-		if user.username == credential {
-			switch user.primaryContact {
-				case .email:
-					address = user.email!
-				case .phone:
-					address = user.phone!
+		func sendCode(_ req: Request) async throws -> HTTPStatus {
+			guard let credential = req.parameters.get("credential") else {
+				throw Abort(.badRequest)
 			}
-		} else {
-			address = credential
+			let user = try await Self.findUser(req)
+			
+			let code = try VerificationCode(user: user)
+			user.verificationCode = code
+			
+			let address: String
+			if user.username == credential {
+				switch user.primaryContact {
+					case .email:
+						address = user.email!
+					case .phone:
+						address = user.phone!
+				}
+			} else {
+				address = credential
+			}
+			
+			try Self.sendMessage(to: address, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
+			
+			// Save the code in db only when message is sent.
+			try await user.save(on: req.db)
+			
+			// Queue the job to remove code later.
+			try await Self.queueDeleteVerificationCode(req, user: user, code: code)
+			return .ok
 		}
 		
-		try Self.sendMessage(to: address, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
-		
-		// Save the code in db only when message is sent.
-		try await user.save(on: req.db)
-
-		// Queue the job to remove code later.
-		try await Self.queueDeleteVerificationCode(req, user: user, code: code)
-		return .ok
-	}
-	
-	func requestCodeForNewContact(_ req: Request) async throws -> HTTPStatus {
-		guard let contact = req.parameters.get("contact") else {
-			throw Abort(.badRequest)
+		// This function returns the user if code matches(for later use), and throws if not
+		func verifyCode(_ req: Request) async throws -> User {
+			guard let codeValue = req.parameters.get("code"),
+				  !codeValue.isEmpty else {
+				throw Abort(.badRequest)
+			}
+			
+			let user = try await Self.findUser(req)
+			
+			if codeValue != user.verificationCode?.value {
+				throw AuthenticationError.invalidVerificationCode
+			}
+			return user
 		}
 		
-		let user = try await Self.findUser(req)
-		
-		let code = try VerificationCode(user: user)
-		user.verificationCode = code
-		
-		try Self.sendMessage(to: contact, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
-		// Save the code in db only when message is sent.
-		try await user.save(on: req.db)
-
-		// Queue the job to remove code later.
-		try await Self.queueDeleteVerificationCode(req, user: user, code: code)
-		return .ok
-	}
-	
-	func updateContact(_ req: Request) async throws -> HTTPStatus {
-		let user = try await Self.verifyCode(req)
-		let string = try req.content.decode(String.self)
-		let method = try User.RegisterInput.generateContactMethod(contactInfo: string)
-		
-		switch method {
-			case .email:
-				user.email = string
-			case .phone:
-				user.phone = string
-		}
-		try await user.save(on: req.db)
-		return .ok
-	}
-	
-	func activate(_ req: Request) async throws -> HTTPStatus {
-		let user = try await Self.verifyCode(req)
-		
-		user.verified = true
-		try await user.save(on: req.db)
-		return .ok
-	}
-	
-	func resetPassword(_ req: Request) async throws -> HTTPStatus {
-		let user = try await Self.verifyCode(req)
-		let passwordArray = try req.content.decode([String].self)
-		guard passwordArray.count == 2 else {
-			throw Abort(.badRequest)
+		func register(_ req: Request) async throws -> HTTPStatus {
+			let input = try req.content.decode(User.RegisterInput.self)
+			let user = try await input.generateUser(req: req)
+			let code = try VerificationCode(user: user)
+			user.verificationCode = code
+			try await user.create(on: req.db)
+			
+			let recipient = input.contactInfo
+			try Self.sendMessage(to: recipient, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
+			try await Self.queueDeleteVerificationCode(req, user: user, code: code)
+			try await Self.queueDeleteUser(req, user: user)
+			
+			return .created
 		}
 		
-		let password1 = passwordArray[0], password2 = passwordArray[1]
-		
-		guard password1 == password2 else {
-			throw RegistrationError.passwordsDontMatch
-		}
-		guard passwordLength.contains(password1.count) else {
-			throw RegistrationError.passwordLengthError
-		}
-		
-		let hashedPassword = try Bcrypt.hash(password1)
-		user.password = hashedPassword
-		try await user.save(on: req.db)
-		return .ok
-	}
-
-	// Via one time password sent by email or SMS
-	func loginViaOTP(_ req: Request) async throws -> Token {
-		let user = try await Self.verifyCode(req)
-		return try await Self.login(req, user: user)
-	}
-	
-	// Basic username/password login, support replacing username by email or phone number.
-	func loginViaCredentials(_ req: Request) async throws -> Token {
-		let user: User
-		
-		do {
-			user = try req.auth.require(User.self)
-		} catch {
-			throw AuthenticationError.invalidLoginNameOrPassword
+		// For first time activation after registration
+		func activate(_ req: Request) async throws -> HTTPStatus {
+			let user = try await verifyCode(req)
+			user.verificationCode = nil
+			user.verified = true
+			try await user.save(on: req.db)
+			return .ok
 		}
 		
-		return try await Self.login(req, user: user)
-	}
-	
-	func logout(_ req: Request) async throws -> HTTPStatus {
-		let userID = try req.auth.require(User.self).requireID()
-		try await Token.invalidateAll(userID: userID, req: req)
-		req.auth.logout(User.self)
-		return .ok
-	}
-	
-	func getPublicUserInfo(_ req: Request) async throws -> User.PublicInfo {
-		let user = try req.auth.require(User.self)
-		user.updateLoginTime()
-		try await user.save(on: req.db)
-		return user.publicInfo
-	}
-	
-	func uploadProfilePic(_ req: Request) async throws -> HTTPStatus {
-		let data = try req.content.decode(Data.self)
-		let user = try req.auth.require(User.self)
-		let userID = try user.requireID()
-		let name = userID.uuidString + UUID().uuidString + ".jpg"
-		let path = req.application.directory.workingDirectory + imageFolder + name
+		// Basic username/password login, support replacing username by email or phone number.
+		func loginViaCredentials(_ req: Request) async throws -> Token {
+			let user: User
+			
+			do {
+				// When req.auth.require() fails, default error message is not so user friendly, so we throw authentication error instead.
+				user = try req.auth.require(User.self)
+			} catch {
+				throw AuthenticationError.invalidLoginNameOrPassword
+			}
+			
+			return try await Self.login(req, user: user)
+		}
 		
-		try await req.fileio.writeFile(.init(data: data), at: path)
-		user.profilePic = name
-		try await user.save(on: req.db)
-		return .ok
+		// Login ia one time password sent by email or SMS
+		func loginViaOTP(_ req: Request) async throws -> Token {
+			let user = try await verifyCode(req)
+			user.verificationCode = nil
+			try await user.save(on: req.db)
+			return try await Self.login(req, user: user)
+		}
+		
+		func resetPassword(_ req: Request) async throws -> HTTPStatus {
+			let user = try await verifyCode(req)
+			let password = try req.content.decode(String.self)
+			
+			guard passwordLength.contains(password.count) else {
+				throw RegistrationError.passwordLengthError
+			}
+			
+			let hashedPassword = try Bcrypt.hash(password)
+			user.password = hashedPassword
+			user.verificationCode = nil
+			try await user.save(on: req.db)
+			return .ok
+		}
+		
+		func logout(_ req: Request) async throws -> HTTPStatus {
+			let userID = try req.auth.require(User.self).requireID()
+			try await Token.invalidateAll(userID: userID, req: req)
+			req.auth.logout(User.self)
+			return .ok
+		}
+		
+		func requestCodeForNewContact(_ req: Request) async throws -> HTTPStatus {
+			guard let contact = req.parameters.get("contact") else {
+				throw Abort(.badRequest)
+			}
+			
+			let user = try await Self.findUser(req)
+			
+			let code = try VerificationCode(user: user)
+			user.verificationCode = code
+			
+			try Self.sendMessage(to: contact, user: user, subject: "\(serviceName)验证码", template: .verificationCode, placeHolders: [code.value], client: req.client)
+			// Save the code in db only when message is sent.
+			try await user.save(on: req.db)
+			
+			// Queue the job to remove code later.
+			try await Self.queueDeleteVerificationCode(req, user: user, code: code)
+			return .ok
+		}
+		
+		func updateContact(_ req: Request) async throws -> HTTPStatus {
+			let user = try await verifyCode(req)
+			let string = try req.content.decode(String.self)
+			let method = try User.RegisterInput.generateContactMethod(contactInfo: string)
+			
+			switch method {
+				case .email:
+					user.email = string
+				case .phone:
+					user.phone = string
+			}
+			user.verificationCode = nil
+			try await user.save(on: req.db)
+			return .ok
+		}
+		
+		func getPublicUserInfo(_ req: Request) async throws -> User.PublicInfo {
+			let user = try req.auth.require(User.self)
+			user.updateLoginTime()
+			try await user.save(on: req.db)
+			return user.publicInfo
+		}
+		
+		func uploadProfilePic(_ req: Request) async throws -> HTTPStatus {
+			let data = try req.content.decode(Data.self)
+			let user = try req.auth.require(User.self)
+			let userID = try user.requireID()
+			let name = userID.uuidString + UUID().uuidString + ".jpg"
+			let path = req.application.directory.workingDirectory + imageFolder + name
+			
+			try await req.fileio.writeFile(.init(data: data), at: path)
+			user.profilePic = name
+			try await user.save(on: req.db)
+			return .ok
+		}
 	}
 }
 
-// Functions in extension shouldn't be called in boot()
+// Functions in this extension shouldn't be called in boot()
 extension UserController {
-	
 	static func findUser(_ req: Request) async throws -> User {
 		guard let credential = req.parameters.get("credential") else {
 			throw Abort(.badRequest)
@@ -232,24 +245,6 @@ extension UserController {
 				let sms = try SMS(recipient: recipient, message: message, client: client)
 				sms.send(client: client)
 		}
-	}
-	
-	// Code verification could do more than just verify the user for the first time, maybe user is resetting a password, changing a new contact info, or even logging in via onetime code. We will need the user instance for later usage, so this function only returns the user if everything works as expected, or throws if anything goes wrong.
-	static func verifyCode(_ req: Request) async throws -> User {
-		guard let codeValue = req.parameters.get("code"),
-			  !codeValue.isEmpty else {
-			throw Abort(.badRequest)
-		}
-		
-		let user = try await findUser(req)
-		
-		guard codeValue == user.verificationCode?.value else {
-			throw AuthenticationError.invalidVerificationCode
-		}
-		// Here means both codes matched, we can remove it
-		user.verificationCode = nil
-		try await user.save(on: req.db)
-		return user
 	}
 	
 	// This function invalid old tokens for the given user, updates login time, generate a new token and returns it. But how the user parameter is passed in depends on the caller. In OTP, user is returned by verifyCode() function; in normal credential login, user is get by req.auth.
