@@ -4,7 +4,7 @@ import Fluent
 final class Order: Model, Content {
 	
 	// To generate an order, first query all associated course's id, generate courseCaches based on the found results, then save the caches along with the user and other order info in db. Upon successful saving, start a timer, after given time period(15 mins for example), the order status should be changed to canceled automatically if hasn't been changed to completed already.
-#warning("After a longer time period(1 month for example), db should automatically purge all unpaid and canceled orders.")
+#warning("After a longer time period(1 month for example), db should automatically purge all canceled orders.")
 	enum Status: String, Codable {
 		// Canceled means user didn't make a successful payment within a limited time, or voluntarily clicked cancel button before making a payment.
 		// Completed means user has made a payment
