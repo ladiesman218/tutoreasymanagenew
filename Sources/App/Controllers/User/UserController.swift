@@ -11,6 +11,13 @@ struct UserController: RouteCollection {
 		let code: String
 		let newPassword: String?
 		let newContact: String?
+		
+		init(credential: String, code: String, newPassword: String? = nil, newContact: String? = nil) {
+			self.credential = credential
+			self.code = code
+			self.newPassword = newPassword
+			self.newContact = newContact
+		}
 	}
 	
 	func boot(routes: RoutesBuilder) throws {
