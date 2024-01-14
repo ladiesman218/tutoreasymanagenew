@@ -40,8 +40,13 @@ struct UserJobs: AsyncJob {
 	}
 	
 	func error(_ context: QueueContext, _ error: Error, _ payload: Payload) async throws {
-		print("execute user job failed")
-		print(error.localizedDescription)
+		context.logger.critical(
+			"Execute user job failed",
+			metadata: [
+				"payload": "\(payload)",
+				"error description": "\(error.localizedDescription)"
+			]
+		)
 		// If you don't want to handle errors you can simply return. You can also omit this function entirely.
 	}
 }

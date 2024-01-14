@@ -10,6 +10,7 @@ let package = Package(
 		// 💧 A server-side Swift web framework.
 		.package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
 		.package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
+		.package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
 		.package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
 		.package(url: "https://github.com/vapor/jwt.git", from: "4.2.0"),
 		.package(url: "https://github.com/vapor/jwt-kit.git", branch: "jws-spike"),
@@ -24,6 +25,7 @@ let package = Package(
 				.product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
 				.product(name: "JWT", package: "jwt"),
 				.product(name: "QueuesFluentDriver", package: "vapor-queues-fluent-driver"),
+				.product(name: "Logging", package: "swift-log")
 			],
 			swiftSettings: [
 				// Enable better optimizations when building in Release configuration. Despite the use of
