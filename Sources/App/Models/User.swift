@@ -64,6 +64,7 @@ final class User: Model, Content {
 	@Children(for: \Order.$user) var orders: [Order]
 	@OptionalField(key: FieldKeys.verificationCode) var verificationCode: VerificationCode?
 	@Field(key: FieldKeys.verified) var verified: Bool
+	@Children(for: \APNSDevice.$user) var apnsDevices: [APNSDevice]
 	
 	init() {}
 	

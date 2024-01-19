@@ -38,11 +38,11 @@ struct IAPController: RouteCollection {
 //		do {
 			let notification = try req.content.decode(SignedPayload.self)
 			
-			let payload = try req.application.jwt.signers.verifyJWSWithX5C(
-				notification.signedPayload,
-				as: NotificationPayload.self,
-				rootCert: "")
-			try await processNotification(req, notification: payload)
+//			let payload = try req.application.jwt.signers.verifyJWSWithX5C(
+//				notification.signedPayload,
+//				as: NotificationPayload.self,
+//				rootCert: "")
+//			try await processNotification(req, notification: payload)
 			return .ok
 //		} catch {
 //			print(error)
@@ -126,39 +126,39 @@ struct IAPController: RouteCollection {
 		print(notification.subtype ?? "unknown notification subtype")
 		
 		let data = notification.data
-		let signedRenewalInfo = try req.application.jwt.signers.verifyJWSWithX5C(data.signedRenewalInfo, as: SignedRenewalInfo.self, rootCert: "")
-		
-		let signedTransactionInfo = try req.application.jwt.signers.verifyJWSWithX5C(data.signedTransactionInfo, as:   SignedTransactionInfo.self, rootCert: "")
-		
-		print(signedRenewalInfo)
-		print(signedTransactionInfo)
-		guard let userID = signedTransactionInfo.appAccountToken else {
-			// send email, no user ID is found for the notification
-			print("user id not found")
-			throw AuthenticationError.userNotFound
-		}
-		
-		// Make sure userID can be found in db, eg: in case the user has been deleted, no need to process its orders
-		guard let user = try await User.find(userID, on: req.db) else {
-			print("User can not be found, can not process its orders")
-			throw AuthenticationError.userNotFound
-		}
-		
-		switch notification.notificationType {
-			case .didRenew:
-				try await subscribe(req, transactionInfo: signedTransactionInfo, renewalInfo: signedRenewalInfo, userID: userID)
-			case .expired:
-				break
-			case .gracePeriodExpired:
-				break
-			case .refund:
-				break
-			case .renewalExtended:
-				break
-			case .subscribed:
-				try await subscribe(req, transactionInfo: signedTransactionInfo, renewalInfo: signedRenewalInfo, userID: userID)
-			default:
-				break
-		}
+//		let signedRenewalInfo = try req.application.jwt.signers.verifyJWSWithX5C(data.signedRenewalInfo, as: SignedRenewalInfo.self, rootCert: "")
+//		
+//		let signedTransactionInfo = try req.application.jwt.signers.verifyJWSWithX5C(data.signedTransactionInfo, as:   SignedTransactionInfo.self, rootCert: "")
+//		
+//		print(signedRenewalInfo)
+//		print(signedTransactionInfo)
+//		guard let userID = signedTransactionInfo.appAccountToken else {
+//			// send email, no user ID is found for the notification
+//			print("user id not found")
+//			throw AuthenticationError.userNotFound
+//		}
+//		
+//		// Make sure userID can be found in db, eg: in case the user has been deleted, no need to process its orders
+//		guard let user = try await User.find(userID, on: req.db) else {
+//			print("User can not be found, can not process its orders")
+//			throw AuthenticationError.userNotFound
+//		}
+//		
+//		switch notification.notificationType {
+//			case .didRenew:
+//				try await subscribe(req, transactionInfo: signedTransactionInfo, renewalInfo: signedRenewalInfo, userID: userID)
+//			case .expired:
+//				break
+//			case .gracePeriodExpired:
+//				break
+//			case .refund:
+//				break
+//			case .renewalExtended:
+//				break
+//			case .subscribed:
+//				try await subscribe(req, transactionInfo: signedTransactionInfo, renewalInfo: signedRenewalInfo, userID: userID)
+//			default:
+//				break
+//		}
 	}
 }

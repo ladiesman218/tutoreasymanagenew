@@ -22,13 +22,12 @@ struct PublicCourseController: RouteCollection {
 	}
 	
 	func getAllCourses(_ req: Request) async throws -> Response {
-		
 		let courses = try await Course.query(on: req.db).all().compactMap { $0.publicList }
 		return try await req.response(of: courses)
 	}
 	
 	// This will return course info with all its stages' urls, currently sorted by their names
-	#warning("Add functionality to sort stages per need")
+#warning("Add functionality to sort stages per need")
 	func getCourse(_ req: Request) async throws -> Response {
 		guard let idString = req.parameters.get("id"), let id = Course.IDValue(idString) else {
 			throw GeneralInputError.invalidID

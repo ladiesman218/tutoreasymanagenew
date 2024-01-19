@@ -8,9 +8,7 @@ import Logging
 public func configure(_ app: Application) throws {
 	app.logger = Logger(label: "TEServer")
 	app.logger.logLevel = .info
-	
-	app.logger.log(level: .info, "Starting server for", metadata: ["environment": "\(app.environment.name)"], source: "asdf")
-//	app.logger.info("label: \(app.logger)")
+	app.logger.log(level: .info, "Starting server for", metadata: ["environment": "\(app.environment.name)"])
 	
 	// When deploying with docker compose, app service depends on database service, it's done by setting app's environment variable DATABASE_HOST to database service's name. So here we need to get database host from environment variable. For local testing, DATABASE_HOST won't be existed so "localhost" will be used.
 	let dbHost = Environment.get("DATABASE_HOST") ?? "localhost"
@@ -31,6 +29,8 @@ public func configure(_ app: Application) throws {
 	app.migrations.add(CreateCourse())
 	app.migrations.add(CreateUser())
 	app.migrations.add(CreateToken())
+	app.migrations.add(CreateAPNSToken())
+	
 	if app.environment != .production {
 		app.migrations.add(ImportTestingData())
 	}
