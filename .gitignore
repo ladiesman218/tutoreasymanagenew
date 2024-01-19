@@ -9,3 +9,4 @@ db.sqlite
 .env
 Public/Courses/
 *.p12
+*.p8
